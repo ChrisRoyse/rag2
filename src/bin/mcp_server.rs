@@ -254,10 +254,10 @@ fn print_capabilities() {
     #[cfg(not(feature = "tantivy"))]
     eprintln!("  ✗ Full-text search (disabled - enable 'tantivy' feature)");
     
-    #[cfg(feature = "tree-sitter")]
-    eprintln!("  ✓ Symbol extraction and search");
-    #[cfg(not(feature = "tree-sitter"))]
-    eprintln!("  ✗ Symbol search (disabled - enable 'tree-sitter' feature)");
+    // Symbol indexing removed with tree-sitter
+    // eprintln!("  ✓ Symbol extraction and search");
+    // Tree-sitter removed
+    eprintln!("  ✗ Symbol search (disabled - tree-sitter dependencies removed)");
     
     eprintln!("  ✓ BM25 statistical search (always available)");
     

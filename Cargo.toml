@@ -31,7 +31,7 @@ bincode = "1.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 anyhow = "1.0"
-tokio = { version = "1.43", features = ["rt-multi-thread", "macros", "fs", "sync", "io-util", "io-std"] }
+tokio = { version = "1.43", features = ["rt-multi-thread", "macros", "fs", "sync", "io-util", "io-std", "signal"] }
 tokio-stream = "0.1"
 futures = "0.3"
 chrono = { version = "0.4", features = ["serde"] }
@@ -65,7 +65,8 @@ unicode-segmentation = "1.10"
 rayon = "1.7"
 walkdir = "2.4"
 
-# REMOVED tantivy - too heavy
+# Add back tantivy for working fuzzy search (use older stable version to avoid zstd issues)
+tantivy = { version = "0.20", optional = true }
 
 # Retry logic with exponential backoff
 backoff = "0.4"
@@ -113,6 +114,10 @@ name = "verify_mcp_config"
 path = "src/bin/verify_mcp_config.rs"
 required-features = ["mcp"]
 
+[[bin]]
+name = "minimal_mvp_demo"
+path = "src/bin/minimal_mvp_demo.rs"
+
 
 
 
@@ -135,7 +140,8 @@ ml = ["dep:candle-core", "dep:candle-nn", "dep:candle-transformers", "dep:tokeni
 # vectordb: Lightweight in-memory storage only
 vectordb = []
 
-# REMOVED tantivy feature - too heavy
+# tantivy: Full-text search with fuzzy matching
+tantivy = ["dep:tantivy"]
 
 # mcp: Model Context Protocol server support
 # - JSON-RPC 2.0 server implementation over stdin/stdout
@@ -196,15 +202,7 @@ path = "tests/compile_time_feature_tests.rs"
 name = "comprehensive_stress_validation"
 path = "tests/integration/comprehensive_stress_validation.rs"
 
-[[test]]
-name = "ast_parser_stress_tests"
-path = "tests/ast_parser_stress_tests.rs"
-required-features = ["tree-sitter"]
-
-[[test]]
-name = "ast_stress_validation"
-path = "tests/ast_stress_validation.rs"
-required-features = ["tree-sitter"]
+# Tree-sitter AST tests removed - dependencies too heavy
 
 [[test]]
 name = "bm25_stress_tests"
@@ -214,7 +212,7 @@ required-features = ["core"]
 [[test]]
 name = "nomic3_missing_stress_tests"
 path = "tests/nomic3_missing_stress_tests.rs"
-required-features = ["full-system"]
+required-features = ["core"]
 
 [[test]]
 name = "mcp_protocol_tests"

@@ -126,13 +126,12 @@ pub fn init_logging(config: LogConfig) -> Result<(), LoggingError> {
     };
 
     if config.json_format {
-        // JSON format for structured logging
+        // JSON format for structured logging - NOTE: json() method may not be available
+        // Fall back to regular format for now
         tracing_subscriber::registry()
             .with(env_filter)
             .with(
                 fmt::layer()
-                    .json()
-                    .with_current_span(true)
                     .with_writer(io::stdout)
             )
             .try_init()

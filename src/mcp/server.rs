@@ -298,7 +298,7 @@ impl McpServer {
             "semantic_search".to_string(),
             #[cfg(feature = "tantivy")]
             "exact_search".to_string(),
-            #[cfg(feature = "tree-sitter")]
+            // tree-sitter removed
             "symbol_search".to_string(),
             "statistical_search".to_string(), // BM25 is always available
         ]
@@ -319,7 +319,7 @@ impl McpServer {
             search: SearchCapabilities {
                 semantic_search: cfg!(feature = "ml"),
                 exact_search: cfg!(feature = "tantivy"),
-                symbol_search: cfg!(feature = "tree-sitter"),
+                symbol_search: false,
                 statistical_search: true, // BM25 always available
                 fuzzy_search: cfg!(feature = "tantivy"),
                 max_results: 1000,
@@ -333,7 +333,7 @@ impl McpServer {
                 batch_indexing: true,
                 incremental_updates: true,
                 file_watching: true, // Now available via MCP watcher integration
-                symbol_extraction: cfg!(feature = "tree-sitter"),
+                symbol_extraction: false,
                 max_file_size_mb: 10, // Reasonable default
             },
             stats: StatsCapabilities {

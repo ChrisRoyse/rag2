@@ -4,8 +4,7 @@ use crate::search::ExactMatch;
 use crate::error::SearchError;
 #[cfg(feature = "vectordb")]
 use crate::storage::lancedb_storage::LanceEmbeddingRecord;
-#[cfg(feature = "tree-sitter")]
-use crate::search::symbol_index::Symbol;
+// tree-sitter import removed
 use crate::search::bm25::BM25Match;
 
 /// Configuration constants for fusion scoring
@@ -215,7 +214,7 @@ impl SimpleFusion {
         Ok(results)
     }
     
-    #[cfg(all(feature = "vectordb", feature = "tree-sitter"))]
+    #[cfg(feature = "vectordb")]
     pub fn fuse_all_results(
         &self,
         exact_matches: Vec<ExactMatch>,
@@ -321,7 +320,7 @@ impl SimpleFusion {
     }
     
     /// Enhanced fusion with BM25 results (4-way fusion)
-    #[cfg(all(feature = "vectordb", feature = "tree-sitter"))]
+    #[cfg(feature = "vectordb")]
     pub fn fuse_all_results_with_bm25(
         &self,
         exact_matches: Vec<ExactMatch>,

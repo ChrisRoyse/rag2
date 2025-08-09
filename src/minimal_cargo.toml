@@ -1,0 +1,69 @@
+[package]
+name = "embed-search"
+version = "0.1.0"
+edition = "2021"
+description = "BRUTALLY MINIMAL Rust-based semantic search system"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# MISSION CRITICAL ONLY - 12 DEPENDENCIES TOTAL
+
+# ML Embeddings (required for core functionality)
+candle-core = "0.9"
+candle-nn = "0.9" 
+candle-transformers = "0.9"
+
+# Search engine (required for indexing)
+tantivy = "0.22"
+
+# AST parsing (required for code analysis)
+tree-sitter = "0.20"
+tree-sitter-rust = "0.20"
+
+# File watching (required for real-time updates)
+notify = "6.1"
+
+# Serialization (required for data persistence)
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling (required for reliability)
+anyhow = "1.0"
+
+# Async runtime (minimal features only)
+tokio = { version = "1.43", features = ["rt-multi-thread", "macros", "fs"] }
+
+# Regex for basic pattern matching
+regex = "1.11"
+
+# REMOVED DEPENDENCIES (39 total):
+# - reqwest, dirs, memmap2, tokenizers, hf-hub, byteorder, rand (ML extras)
+# - bincode (use serde_json instead)
+# - tokio-stream, futures, async-trait (not essential)
+# - chrono, once_cell (use std instead)  
+# - thiserror (use anyhow instead)
+# - log, env_logger, tracing, tracing-subscriber (no logging)
+# - notify-debouncer-mini, git2, ignore, crossbeam-channel (file watching extras)
+# - toml, config, clap (no CLI/config)
+# - lru, sha2 (no caching/hashing)
+# - rust-stemmers, unicode-normalization, unicode-segmentation (no text processing)
+# - rayon, walkdir (use std instead)
+# - backoff (no retry logic)
+# - sysinfo, parking_lot, rustc-hash (no monitoring)
+# - tempfile (use std)
+# - colored (dev dependency only)
+
+[features]
+default = []
+
+# Single feature for everything - no granular control
+full = ["dep:candle-core", "dep:candle-nn", "dep:candle-transformers", "dep:tantivy", "dep:tree-sitter", "dep:tree-sitter-rust"]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+# NO BINARIES - library only
+# NO TESTS - compile only
+# NO DEV-DEPENDENCIES - brutal minimal

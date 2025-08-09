@@ -132,13 +132,13 @@ async fn clear_vector_index(_searcher: &Arc<RwLock<UnifiedSearcher>>) -> McpResu
 
 /// Clear symbol index only (Tree-sitter)
 async fn clear_symbol_index(_searcher: &Arc<RwLock<UnifiedSearcher>>) -> McpResult<u32> {
-    #[cfg(feature = "tree-sitter")]
+    // tree-sitter removed
     {
         println!("🧹 Clearing symbol index (Tree-sitter)...");
         // Would need to expose symbol-specific clearing on UnifiedSearcher
-        clear_all_indexes(_searcher).await
+        let _ = clear_all_indexes(_searcher).await;
     }
-    #[cfg(not(feature = "tree-sitter"))]
+    // tree-sitter removed
     {
         Err(McpError::InternalError {
             message: "Symbol index clearing not available: tree-sitter feature disabled".to_string()

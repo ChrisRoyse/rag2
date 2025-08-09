@@ -7,6 +7,9 @@ pub mod error;
 // Configuration management (Phase 1)  
 pub mod config;
 
+// AST parsing module for symbol extraction
+pub mod ast;
+
 // Safe storage implementations (Phase 1)
 pub mod storage {
     pub mod safe_vectordb;  // New thread-safe implementation
@@ -49,6 +52,9 @@ pub mod chunking;
 // pub mod file_cache;    // TODO: Create or remove
 // pub mod symbol;        // TODO: Create or remove  
 // pub mod treesitter;    // TODO: Create or remove
+
+// MINIMAL MVP - 4 Working Components Only
+pub mod minimal_mvp;
 
 // MCP server protocol handler
 pub mod mcp;

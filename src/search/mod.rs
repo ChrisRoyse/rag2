@@ -20,15 +20,14 @@ pub mod fusion;            // ✅ Depends on bm25
 pub mod config;            // ✅ Search configuration
 pub mod simple_searcher;   // ✅ Basic searcher (BM25+Tantivy) with graceful degradation - NO Tree-sitter by design
 pub mod bm25_fixed;        // ✅ Fixed BM25 implementation
+pub mod simple_bm25;       // ✅ Simple BM25 implementation (100 lines max)
 pub mod unified;           // ✅ Depends on everything above
-#[cfg(feature = "tree-sitter")]
-pub mod symbol_index;
-#[cfg(feature = "tree-sitter")]
-pub mod symbol_enhanced_searcher;
+// tree-sitter removed for compilation
 #[cfg(feature = "tantivy")]
 pub mod tantivy_search;
 #[cfg(feature = "tantivy")]
 pub mod search_adapter;
+pub mod working_fuzzy_search;
 
 // Re-export ONLY non-circular items
 pub use native_search::{NativeSearcher, SearchMatch};
@@ -41,10 +40,10 @@ pub use unified::UnifiedSearcher;
 pub use config::SearchConfig;
 pub use simple_searcher::{SimpleSearcher, SimpleSearchResult};
 pub use bm25_fixed::BM25Engine as BM25EngineFixed;
+pub use simple_bm25::{SimpleBM25, BM25Result};
 pub use cache::SearchResult;
 // DO NOT re-export cache::SearchCache - causes circular deps
-#[cfg(feature = "tree-sitter")]
-pub use symbol_index::{SymbolIndexer, SymbolDatabase, Symbol, SymbolKind};
+// tree-sitter exports removed
 #[cfg(feature = "tantivy")]
 pub use tantivy_search::TantivySearcher;
 #[cfg(feature = "tantivy")]

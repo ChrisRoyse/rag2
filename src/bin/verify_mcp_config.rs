@@ -7,7 +7,7 @@
 /// 4. Creates MCP servers successfully
 
 use std::path::PathBuf;
-use tempfile::TempDir;
+// use tempfile::TempDir; // Removed to reduce dependencies
 
 use embed_search::config::Config;
 use embed_search::mcp::config::McpConfig;
@@ -95,8 +95,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Step 8: Test MCP server creation (in temp directory)
     println!("9️⃣  Testing MCP server creation...");
-    let temp_dir = TempDir::new()?;
-    let project_path = temp_dir.path().to_path_buf();
+    // Use current directory instead of temp directory to avoid tempfile dependency
+    let project_path = std::env::current_dir()?;
     
     // Create a simple UnifiedSearcher
     let db_path = project_path.join(".embed-search");

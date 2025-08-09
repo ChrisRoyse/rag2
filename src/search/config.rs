@@ -27,7 +27,7 @@ impl Default for SearchConfig {
             enable_bm25: true,
             enable_tantivy: cfg!(feature = "tantivy"),
             enable_ml: false, // Disabled by default due to compilation issues
-            enable_tree_sitter: cfg!(feature = "tree-sitter"),
+            enable_tree_sitter: false,  // tree-sitter removed
             index_path: PathBuf::from(".embed_index"),
         }
     }
@@ -54,10 +54,7 @@ impl SearchConfig {
             #[cfg(not(feature = "tantivy"))]
             enable_tantivy: false,
             enable_ml: false, // Disabled due to Windows compilation issues
-            #[cfg(feature = "tree-sitter")]
-            enable_tree_sitter: true,
-            #[cfg(not(feature = "tree-sitter"))]
-            enable_tree_sitter: false,
+            enable_tree_sitter: false,  // tree-sitter removed
             index_path: PathBuf::from(".embed_index"),
         }
     }

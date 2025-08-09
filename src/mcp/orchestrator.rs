@@ -169,7 +169,7 @@ impl SearchOrchestrator {
             bm25_available: true,
             exact_available: cfg!(feature = "tantivy"),
             semantic_available: cfg!(all(feature = "ml", feature = "vectordb")),
-            symbol_available: cfg!(feature = "tree-sitter"),
+            symbol_available: false, // tree-sitter removed
             failed_backends: Vec::new(),
         };
         

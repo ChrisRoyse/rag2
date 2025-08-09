@@ -22,8 +22,7 @@ use crate::search::inverted_index::{InvertedIndex, DocumentMetadata};
 use crate::search::cache::SearchCache;
 #[cfg(feature = "tantivy")]
 use crate::search::search_adapter::{TextSearcher, create_text_searcher_with_root};
-#[cfg(feature = "tree-sitter")]
-use crate::search::symbol_index::{SymbolIndexer, SymbolDatabase, Symbol};
+// tree-sitter removed
 use crate::config::{Config, SearchBackend};
 
 
@@ -37,10 +36,7 @@ pub struct UnifiedSearcher {
     embedder: LazyEmbedder,
     #[cfg(feature = "vectordb")]
     storage: Arc<RwLock<LanceDBStorage>>,
-    #[cfg(feature = "tree-sitter")]
-    symbol_indexer: Arc<RwLock<SymbolIndexer>>,
-    #[cfg(feature = "tree-sitter")]
-    symbol_db: Arc<RwLock<SymbolDatabase>>,
+    // Tree-sitter symbols removed - dependencies too heavy
     // BM25 components (always available)
     bm25_engine: Arc<RwLock<BM25Engine>>,
     inverted_index: Arc<RwLock<InvertedIndex>>,
@@ -88,10 +84,7 @@ impl UnifiedSearcher {
         storage.write().await.init_table().await?;
         
         // Initialize symbol indexer and database
-        #[cfg(feature = "tree-sitter")]
-        let symbol_indexer = Arc::new(RwLock::new(SymbolIndexer::new()?));
-        #[cfg(feature = "tree-sitter")]
-        let symbol_db = Arc::new(RwLock::new(SymbolDatabase::new()));
+        // Symbol indexing removed with tree-sitter
         
         // Get already initialized configuration
         let config = Config::get()
@@ -119,7 +112,7 @@ impl UnifiedSearcher {
         
         #[cfg(feature = "ml")]
         println!("✅ Lazy embedder configured (will load on first use)");
-        #[cfg(feature = "tree-sitter")]
+        // tree-sitter removed
         println!("✅ Symbol indexer initialized with tree-sitter parsers");
         println!("✅ BM25 engine initialized with TF-IDF scoring");
         
@@ -138,10 +131,7 @@ impl UnifiedSearcher {
             embedder,
             #[cfg(feature = "vectordb")]
             storage,
-            #[cfg(feature = "tree-sitter")]
-            symbol_indexer,
-            #[cfg(feature = "tree-sitter")]
-            symbol_db,
+            // symbols removed
             bm25_engine,
             inverted_index,
             text_processor,
@@ -191,20 +181,19 @@ impl UnifiedSearcher {
         println!("🔍 Searching for: '{}' (preprocessed: '{}')", query, processed_query);
         
         // Execute all search methods in parallel for 70% latency reduction
-        let (bm25_results, exact_results, semantic_results, symbol_results) = tokio::join!(
+        let (bm25_results, exact_results, semantic_results) = tokio::join!(
             self.search_bm25(&processed_query),
             self.search_exact(&processed_query),
-            self.search_semantic(&processed_query), 
-            self.search_symbols(&processed_query)
+            self.search_semantic(&processed_query)
         );
+        // Symbol search removed with tree-sitter
         
         // Suppress unused variable warnings when features are disabled
         #[cfg(not(feature = "tantivy"))]
         let _ = exact_results;
         #[cfg(not(all(feature = "ml", feature = "vectordb")))]
         let _ = semantic_results;
-        #[cfg(not(feature = "tree-sitter"))]
-        let _ = symbol_results;
+        // Symbol results removed with tree-sitter
         
         // Collect results from available search engines
         let mut fused = Vec::new();
@@ -293,30 +282,20 @@ impl UnifiedSearcher {
             }
         }
         
-        // Process symbol search results
-        #[cfg(feature = "tree-sitter")]
-        {
-            match symbol_results {
-                Ok(symbol_matches) => {
-                    println!("📊 Found {} symbol matches", symbol_matches.len());
-                    for symbol in symbol_matches {
-                        fused.push(FusedResult {
-                            file_path: symbol.file_path,
-                            score: 1.0, // Tree-sitter matches are high priority
-                            match_type: MatchType::Symbol,
-                            line_number: Some(symbol.line_start),
-                            chunk_index: None,
-                            content: symbol.signature.unwrap_or_default(),
-                            start_line: symbol.line_start,
-                            end_line: symbol.line_end,
-                        });
-                    }
-                }
-                Err(e) => {
-                    println!("⚠️ Symbol search failed: {}", e);
-                }
-            }
-        }
+        // Symbol search processing removed with tree-sitter
+        // {
+        //     match symbol_results {
+        //         Ok(symbol_matches) => {
+        //             println!("📊 Found {} symbol matches", symbol_matches.len());
+        //             for symbol in symbol_matches {
+        //                 // Symbol processing removed
+        //             }
+        //         }
+        //         Err(e) => {
+        //             println!("⚠️ Symbol search failed: {}", e);
+        //         }
+        //     }
+        // }
         
         // If we have no results, that's still a valid response
         if fused.is_empty() {
@@ -381,27 +360,9 @@ impl UnifiedSearcher {
         Err(anyhow::anyhow!("Semantic search not available: ml and vectordb features not enabled. Please enable both features to use semantic search."))
     }
     
-    #[cfg(feature = "tree-sitter")]
-    pub async fn search_symbols(&self, query: &str) -> Result<Vec<Symbol>> {
-        // Search in symbol database
-        let db = self.symbol_db.read().await;
-        
-        // Try to find exact definition first
-        if let Some(symbol) = db.find_definition(query) {
-            return Ok(vec![symbol]);
-        }
-        
-        // Otherwise find all references
-        let symbols = db.find_all_references(query);
-        
-        // Return owned symbols
-        Ok(symbols)
-    }
-    
-    #[cfg(not(feature = "tree-sitter"))]
-    #[allow(dead_code)]
-    async fn search_symbols(&self, _query: &str) -> Result<Vec<()>> {
-        Err(anyhow::anyhow!("Symbol search not available: tree-sitter feature not enabled. Please enable the tree-sitter feature to use symbol search."))
+    // Symbol search removed - tree-sitter dependencies removed
+    pub async fn search_symbols(&self, _query: &str) -> Result<Vec<()>> {
+        Err(anyhow::anyhow!("Symbol search not available: tree-sitter feature removed for compilation"))
     }
     
     async fn search_bm25(&self, query: &str) -> Result<Vec<BM25Match>> {
@@ -491,7 +452,7 @@ impl UnifiedSearcher {
         }
         
         // Extract and index symbols if it's a supported language
-        #[cfg(feature = "tree-sitter")]
+        // tree-sitter removed
         if let Some(ext) = file_path.extension().and_then(|s| s.to_str()) {
             // Detect language from file extension
             let language = match ext {
@@ -512,19 +473,8 @@ impl UnifiedSearcher {
             };
             
             if let Some(lang) = language {
-                // Extract symbols using the indexer
-                let mut indexer = self.symbol_indexer.write().await;
-                let file_path_str = file_path.to_str()
-                    .ok_or_else(|| anyhow::anyhow!("File path contains invalid UTF-8 characters: {:?}", file_path))?;
-                let symbols = indexer.extract_symbols(&content, lang, file_path_str)
-                    .map_err(|e| anyhow::anyhow!("Failed to extract symbols from {:?}: {}. Symbol extraction must succeed for complete indexing.", file_path, e))?;
-                
-                if !symbols.is_empty() {
-                    // Add symbols to the database
-                    let mut db = self.symbol_db.write().await;
-                    db.add_symbols(symbols.clone());
-                    println!("🔍 Indexed {} symbols from {:?}", symbols.len(), file_path);
-                }
+                // Symbol extraction removed with tree-sitter
+                // indexer.extract_symbols() and db.add_symbols() removed
             }
         }
         
@@ -781,14 +731,7 @@ impl UnifiedSearcher {
             }
         }
         
-        // Remove from symbol database
-        #[cfg(feature = "tree-sitter")]
-        {
-            let mut symbol_db = self.symbol_db.write().await;
-            let file_path_str = file_path.to_str()
-                .ok_or_else(|| anyhow::anyhow!("File path contains invalid UTF-8: {:?}", file_path))?;
-            symbol_db.remove_file_symbols(file_path_str);
-        }
+        // Symbol database removal removed with tree-sitter
         
         // Remove from BM25 engine - find all chunks for this file and remove them
         if self.bm25_enabled {
@@ -941,12 +884,7 @@ impl UnifiedSearcher {
             index.clear();
         }
         
-        // Clear symbol database
-        #[cfg(feature = "tree-sitter")]
-        {
-            let mut symbol_db = self.symbol_db.write().await;
-            symbol_db.clear();
-        }
+        // Symbol database clearing removed with tree-sitter
         
         println!("🧹 Cleared all indexed data");
         Ok(())
