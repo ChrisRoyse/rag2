@@ -58,6 +58,14 @@ coordination/orchestration/*
 
 # Large model files
 src/embedding/nomic-ai_nomic-embed-code-Q4_K_M.gguf
+model/
+
+# Development and configuration directories
+.claude-flow/
+.serena/
+memory/
+serena/
+.roomodes
 
 
 
