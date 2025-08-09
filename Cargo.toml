@@ -1,0 +1,227 @@
+[package]
+name = "embed-search"
+version = "0.1.0"
+edition = "2021"
+description = "Rust-based semantic search system with ML embeddings, vector storage, and symbol indexing"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+regex = "1.11"
+
+# Nomic Embed GGUF support (ML feature)
+reqwest = { version = "0.11", features = ["stream"], optional = true }
+dirs = { version = "5.0", optional = true }
+memmap2 = { version = "0.9", optional = true }
+
+# Candle for GGUF inference (ML feature)
+candle-core = { version = "0.9", optional = true }
+candle-nn = { version = "0.9", optional = true }
+candle-transformers = { version = "0.9", optional = true }
+tokenizers = { version = "0.21", default-features = false, features = ["onig"], optional = true }
+hf-hub = { version = "0.3", features = ["tokio"], optional = true }
+byteorder = { version = "1.5", optional = true }
+rand = { version = "0.8", optional = true }
+
+# REMOVED LanceDB - too heavy, causes 2+ minute compilation
+
+# Lightweight storage only
+bincode = "1.3"
+
+# Always needed
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+tokio = { version = "1.43", features = ["rt-multi-thread", "macros", "fs", "sync", "io-util", "io-std"] }
+tokio-stream = "0.1"
+futures = "0.3"
+chrono = { version = "0.4", features = ["serde"] }
+once_cell = "1.19"
+async-trait = "0.1"
+thiserror = "1.0"
+log = "0.4"
+
+# File watching and git integration
+notify = "6.1"
+notify-debouncer-mini = "0.4"
+git2 = "0.18"
+ignore = "0.4"
+crossbeam-channel = "0.5"
+
+# Configuration management
+toml = "0.8"
+config = "0.13"  # Required by configuration system
+clap = { version = "4.4", features = ["derive"] }
+
+# Embedding optimization
+lru = "0.12"
+sha2 = "0.10"
+
+# BM25 and text processing
+rust-stemmers = "1.2"
+unicode-normalization = "0.1"
+unicode-segmentation = "1.10"
+
+# Native search and parallel processing
+rayon = "1.7"
+walkdir = "2.4"
+
+# REMOVED tantivy - too heavy
+
+# Retry logic with exponential backoff
+backoff = "0.4"
+
+# Memory management and monitoring
+sysinfo = "0.30"
+parking_lot = "0.12"
+rustc-hash = "1.1"
+# Logging (required by code)
+env_logger = "0.10"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Windows API for memory measurement in stress tests
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["processthreadsapi", "psapi", "sysinfoapi"] }
+
+# Thread-safe data structures (moved to main dependencies section)
+
+
+# Removed duplicate tracing
+
+# REMOVED tree-sitter - too many dependencies
+
+# Temporary directory management
+tempfile = "3.12"
+
+# Removed tantivy_migrator - feature doesn't exist
+
+# Removed verify_symbols - tree-sitter removed
+
+# Removed test_persistence - tantivy removed
+
+# Removed test_project_scoping - tantivy removed
+
+# Removed test_unified_project_scope - tantivy removed
+
+[[bin]]
+name = "mcp_server"
+path = "src/bin/mcp_server.rs"
+required-features = ["mcp"]
+
+[[bin]]
+name = "verify_mcp_config"
+path = "src/bin/verify_mcp_config.rs"
+required-features = ["mcp"]
+
+
+
+
+[features]
+default = ["core"]
+
+# Core features (minimal dependencies) - includes BM25 and basic text processing
+core = []
+
+# Individual feature flags for controlled capability addition:
+#
+# REMOVED tree-sitter - too many dependencies, use simple regex for symbols
+
+# ml: Machine learning embeddings using Candle and GGUF models
+# - Enables semantic similarity search using Nomic embeddings
+# - Requires significant disk space for model files (~500MB)
+# - Compilation time increases substantially with ML dependencies
+ml = ["dep:candle-core", "dep:candle-nn", "dep:candle-transformers", "dep:tokenizers", "dep:hf-hub", "dep:reqwest", "dep:dirs", "dep:memmap2", "dep:byteorder", "dep:rand"]
+
+# vectordb: Lightweight in-memory storage only
+vectordb = []
+
+# REMOVED tantivy feature - too heavy
+
+# mcp: Model Context Protocol server support
+# - JSON-RPC 2.0 server implementation over stdin/stdout
+# - Integrates with existing search backends (BM25, Tantivy, ML)
+# - Uses only standard dependencies already in project
+mcp = []
+
+# Simplified feature combinations:
+simple = ["core"]  # Basic search only
+with-ml = ["core", "ml"]  # Search with embeddings
+mcp-server = ["mcp", "core"]  # MCP with basic search
+
+[profile.test]
+opt-level = 2  # Optimize tests for speed
+
+[dev-dependencies]
+criterion = "0.5"
+tempfile = "3.12"
+# Stress testing framework dependencies
+rand = "0.8"
+chrono = { version = "0.4", features = ["serde"] }
+colored = "2.0"
+
+
+[[test]]
+name = "chunker_integration_tests"
+path = "tests/chunker_integration_tests.rs"
+
+[[test]]
+name = "line_tracking_tests"
+path = "tests/line_tracking_tests.rs"
+
+[[test]]
+name = "nomic_embedding_tests"
+path = "tests/nomic_embedding_tests.rs"
+
+[[test]]
+name = "real_embedding_system_tests"
+path = "tests/real_embedding_system_tests.rs"
+
+[[test]]
+name = "embedding_performance_benchmark"
+path = "tests/embedding_performance_benchmark.rs"
+
+[[test]]
+name = "production_embedding_verification"
+path = "tests/production_embedding_verification.rs"
+
+[[test]]
+name = "search_accuracy_test"
+path = "tests/search_accuracy_test.rs"
+
+[[test]]
+name = "compile_time_feature_tests"
+path = "tests/compile_time_feature_tests.rs"
+
+[[test]]
+name = "comprehensive_stress_validation"
+path = "tests/integration/comprehensive_stress_validation.rs"
+
+[[test]]
+name = "ast_parser_stress_tests"
+path = "tests/ast_parser_stress_tests.rs"
+required-features = ["tree-sitter"]
+
+[[test]]
+name = "ast_stress_validation"
+path = "tests/ast_stress_validation.rs"
+required-features = ["tree-sitter"]
+
+[[test]]
+name = "bm25_stress_tests"
+path = "tests/bm25_stress_tests.rs"
+required-features = ["core"]
+
+[[test]]
+name = "nomic3_missing_stress_tests"
+path = "tests/nomic3_missing_stress_tests.rs"
+required-features = ["full-system"]
+
+[[test]]
+name = "mcp_protocol_tests"
+path = "tests/mcp_protocol_tests.rs"
+required-features = ["mcp"]
+
+[[test]]
+name = "mcp_integration_tests" 
+path = "tests/mcp_integration_tests.rs"
+required-features = ["mcp-server"]

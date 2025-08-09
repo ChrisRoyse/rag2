@@ -1,0 +1,87 @@
+/target
+# Project specific
+.embed_cache/
+.embed_db/
+*.cache
+config.toml
+.embedrc
+
+# Claude and development directories (too many to track)
+.claude/
+.roo/
+node_modules/
+
+# Test directories and databases
+test_bm25_accuracy_db/
+vectortest/
+
+# Documentation files (temporary/generated)
+COMPILATION_FIX_SUMMARY.md
+GGUF_ARCHITECTURE_BLUEPRINT.md
+MODEL_INTEGRITY_FRAMEWORK.md
+PERFORMANCE_OPTIMIZATION_STRATEGY.md
+TESTING_STRATEGY.md
+TRANSFORMER_IMPLEMENTATION_PLAN.md
+
+# Docs subdirectories
+docs/fixissues/
+docs/subagent_list.md
+docs/systemstatus.md
+
+# Miscellaneous
+nul
+
+# Node.js dependencies
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+
+.claude/settings.local.json
+.mcp.json
+.swarm/
+.hive-mind/
+memory/sessions/*
+!memory/sessions/README.md
+memory/agents/*
+!memory/agents/README.md
+coordination/memory_bank/*
+coordination/subtasks/*
+coordination/orchestration/*
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+
+# Large model files
+src/embedding/nomic-ai_nomic-embed-code-Q4_K_M.gguf
+
+
+
+# Claude Flow generated files
+.claude/settings.local.json
+.mcp.json
+claude-flow.config.json
+.swarm/
+.hive-mind/
+memory/claude-flow-data.json
+memory/sessions/*
+!memory/sessions/README.md
+memory/agents/*
+!memory/agents/README.md
+coordination/memory_bank/*
+coordination/subtasks/*
+coordination/orchestration/*
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+claude-flow
+claude-flow.bat
+claude-flow.ps1
+hive-mind-prompt-*.txt
