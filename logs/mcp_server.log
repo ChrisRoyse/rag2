@@ -1,0 +1,145 @@
+
+[2025-08-10T12:58:47.643Z] Starting MCP server wrapper
+Binary: /home/cabdru/rag/target/debug/mcp_server
+Project: /home/cabdru/rag
+[2m2025-08-10T12:58:47.654006Z[0m [32m INFO[0m Starting MCP server for embed-search    
+[2m2025-08-10T12:58:47.654057Z[0m [32m INFO[0m Server name: embed-search-mcp    
+[2m2025-08-10T12:58:47.654587Z[0m [33m WARN[0m Config initialization failed: missing field `project_path`, initializing with test config    
+[2m2025-08-10T12:58:47.654634Z[0m [32m INFO[0m Using project path: /home/cabdru/rag    
+[2m2025-08-10T12:58:47.654652Z[0m [32m INFO[0m Configuration: indexing=true, stats=true, max_requests=100, timeout=30000ms    
+[2m2025-08-10T12:58:47.654670Z[0m [32m INFO[0m MCP server initialized successfully    
+[2m2025-08-10T12:58:47.654677Z[0m [32m INFO[0m Ready to accept JSON-RPC requests on stdin/stdout    
+[2m2025-08-10T12:58:47.654738Z[0m [32m INFO[0m Stdio transport started successfully    
+[2m2025-08-10T12:58:47.654751Z[0m [32m INFO[0m MCP server ready on stdio transport    
+[2m2025-08-10T12:58:47.655254Z[0m [32m INFO[0m EOF reached on stdin, transport closing    
+[2m2025-08-10T12:58:47.655291Z[0m [32m INFO[0m Transport closed, shutting down event loop    
+[2m2025-08-10T12:58:47.655303Z[0m [32m INFO[0m MCP server shutting down    
+[2m2025-08-10T12:58:47.655313Z[0m [32m INFO[0m Stdio transport stopped    
+[2m2025-08-10T12:58:47.655321Z[0m [32m INFO[0m MCP server event loop completed successfully    
+[2m2025-08-10T12:58:47.655327Z[0m [32m INFO[0m MCP server shutdown complete    
+[2025-08-10T12:58:47.656Z] Process exited with code 0, signal null
+
+[2025-08-10T12:59:33.359Z] Starting MCP server wrapper
+Binary: /home/cabdru/rag/target/debug/mcp_server
+Project: /home/cabdru/rag
+[2m2025-08-10T12:59:33.371310Z[0m [32m INFO[0m Starting MCP server for embed-search    
+[2m2025-08-10T12:59:33.371367Z[0m [32m INFO[0m Server name: embed-search-mcp    
+[2m2025-08-10T12:59:33.371902Z[0m [33m WARN[0m Config initialization failed: missing field `project_path`, initializing with test config    
+[2m2025-08-10T12:59:33.371957Z[0m [32m INFO[0m Using project path: /home/cabdru/rag    
+[2m2025-08-10T12:59:33.371977Z[0m [32m INFO[0m Configuration: indexing=true, stats=true, max_requests=100, timeout=30000ms    
+[2m2025-08-10T12:59:33.371996Z[0m [32m INFO[0m MCP server initialized successfully    
+[2m2025-08-10T12:59:33.372003Z[0m [32m INFO[0m Ready to accept JSON-RPC requests on stdin/stdout    
+[2m2025-08-10T12:59:33.372100Z[0m [32m INFO[0m Stdio transport started successfully    
+[2m2025-08-10T12:59:33.372114Z[0m [32m INFO[0m MCP server ready on stdio transport    
+[2m2025-08-10T12:59:33.372760Z[0m [32m INFO[0m EOF reached on stdin, transport closing    
+[2m2025-08-10T12:59:33.372796Z[0m [32m INFO[0m Transport closed, shutting down event loop    
+[2m2025-08-10T12:59:33.372808Z[0m [32m INFO[0m MCP server shutting down    
+[2m2025-08-10T12:59:33.372817Z[0m [32m INFO[0m Stdio transport stopped    
+[2m2025-08-10T12:59:33.372826Z[0m [32m INFO[0m MCP server event loop completed successfully    
+[2m2025-08-10T12:59:33.372832Z[0m [32m INFO[0m MCP server shutdown complete    
+[2025-08-10T12:59:33.374Z] Process exited with code 0, signal null
+
+[2025-08-10T13:01:20.315Z] Starting MCP server wrapper
+Binary: /home/cabdru/rag/target/debug/mcp_server
+Project: /home/cabdru/rag
+[2m2025-08-10T13:01:20.327682Z[0m [32m INFO[0m Starting MCP server for embed-search    
+[2m2025-08-10T13:01:20.327734Z[0m [32m INFO[0m Server name: embed-search-mcp    
+[2m2025-08-10T13:01:20.328289Z[0m [33m WARN[0m Config initialization failed: missing field `project_path`, initializing with test config    
+[2m2025-08-10T13:01:20.328339Z[0m [32m INFO[0m Using project path: /home/cabdru/rag    
+[2m2025-08-10T13:01:20.328359Z[0m [32m INFO[0m Configuration: indexing=true, stats=true, max_requests=100, timeout=30000ms    
+[2m2025-08-10T13:01:20.328378Z[0m [32m INFO[0m MCP server initialized successfully    
+[2m2025-08-10T13:01:20.328385Z[0m [32m INFO[0m Ready to accept JSON-RPC requests on stdin/stdout    
+[2m2025-08-10T13:01:20.328455Z[0m [32m INFO[0m Stdio transport started successfully    
+[2m2025-08-10T13:01:20.328470Z[0m [32m INFO[0m MCP server ready on stdio transport    
+[2m2025-08-10T13:01:20.329016Z[0m [32m INFO[0m EOF reached on stdin, transport closing    
+[2m2025-08-10T13:01:20.329087Z[0m [32m INFO[0m Transport closed, shutting down event loop    
+[2m2025-08-10T13:01:20.329099Z[0m [32m INFO[0m MCP server shutting down    
+[2m2025-08-10T13:01:20.329109Z[0m [32m INFO[0m Stdio transport stopped    
+[2m2025-08-10T13:01:20.329118Z[0m [32m INFO[0m MCP server event loop completed successfully    
+[2m2025-08-10T13:01:20.329124Z[0m [32m INFO[0m MCP server shutdown complete    
+[2025-08-10T13:01:20.330Z] Process exited with code 0, signal null
+
+[2025-08-10T13:01:31.110Z] Starting MCP server wrapper
+Binary: /home/cabdru/rag/target/debug/mcp_server
+Project: /home/cabdru/rag
+[2m2025-08-10T13:01:31.121661Z[0m [32m INFO[0m Starting MCP server for embed-search    
+[2m2025-08-10T13:01:31.121706Z[0m [32m INFO[0m Server name: embed-search-mcp    
+[2m2025-08-10T13:01:31.122136Z[0m [33m WARN[0m Config initialization failed: missing field `project_path`, initializing with test config    
+[2m2025-08-10T13:01:31.122160Z[0m [32m INFO[0m Using project path: /home/cabdru/rag    
+[2m2025-08-10T13:01:31.122173Z[0m [32m INFO[0m Configuration: indexing=true, stats=true, max_requests=100, timeout=30000ms    
+[2m2025-08-10T13:01:31.122191Z[0m [32m INFO[0m MCP server initialized successfully    
+[2m2025-08-10T13:01:31.122197Z[0m [32m INFO[0m Ready to accept JSON-RPC requests on stdin/stdout    
+[2m2025-08-10T13:01:31.122246Z[0m [32m INFO[0m Stdio transport started successfully    
+[2m2025-08-10T13:01:31.122259Z[0m [32m INFO[0m MCP server ready on stdio transport    
+[2m2025-08-10T13:01:31.122697Z[0m [32m INFO[0m EOF reached on stdin, transport closing    
+[2m2025-08-10T13:01:31.122729Z[0m [32m INFO[0m Transport closed, shutting down event loop    
+[2m2025-08-10T13:01:31.122741Z[0m [32m INFO[0m MCP server shutting down    
+[2m2025-08-10T13:01:31.122749Z[0m [32m INFO[0m Stdio transport stopped    
+[2m2025-08-10T13:01:31.122757Z[0m [32m INFO[0m MCP server event loop completed successfully    
+[2m2025-08-10T13:01:31.122762Z[0m [32m INFO[0m MCP server shutdown complete    
+[2025-08-10T13:01:31.124Z] Process exited with code 0, signal null
+[2m2025-08-10T13:02:35.948916Z[0m [32m INFO[0m Starting MCP server for embed-search    
+[2m2025-08-10T13:02:35.948981Z[0m [32m INFO[0m Server name: embed-search-mcp    
+[2m2025-08-10T13:02:35.949571Z[0m [33m WARN[0m Config initialization failed: missing field `project_path`, initializing with test config    
+[2m2025-08-10T13:02:35.949619Z[0m [32m INFO[0m Using project path: /home/cabdru/rag    
+[2m2025-08-10T13:02:35.949640Z[0m [32m INFO[0m Configuration: indexing=true, stats=true, max_requests=100, timeout=30000ms    
+[2m2025-08-10T13:02:35.949659Z[0m [32m INFO[0m MCP server initialized successfully    
+[2m2025-08-10T13:02:35.949667Z[0m [32m INFO[0m Ready to accept JSON-RPC requests on stdin/stdout    
+[2m2025-08-10T13:02:35.949728Z[0m [32m INFO[0m Stdio transport started successfully    
+[2m2025-08-10T13:02:35.949765Z[0m [32m INFO[0m MCP server ready on stdio transport    
+[2m2025-08-10T13:02:35.950377Z[0m [32m INFO[0m EOF reached on stdin, transport closing    
+[2m2025-08-10T13:02:35.950423Z[0m [32m INFO[0m Transport closed, shutting down event loop    
+[2m2025-08-10T13:02:35.950437Z[0m [32m INFO[0m MCP server shutting down    
+[2m2025-08-10T13:02:35.950448Z[0m [32m INFO[0m Stdio transport stopped    
+[2m2025-08-10T13:02:35.950457Z[0m [32m INFO[0m MCP server event loop completed successfully    
+[2m2025-08-10T13:02:35.950464Z[0m [32m INFO[0m MCP server shutdown complete    
+[2m2025-08-10T13:04:19.440001Z[0m [32m INFO[0m Starting MCP server for embed-search    
+[2m2025-08-10T13:04:19.440058Z[0m [32m INFO[0m Server name: embed-search-mcp    
+[2m2025-08-10T13:04:19.440581Z[0m [33m WARN[0m Config initialization failed: missing field `project_path`, initializing with test config    
+[2m2025-08-10T13:04:19.440628Z[0m [32m INFO[0m Using project path: /home/cabdru/rag    
+[2m2025-08-10T13:04:19.440649Z[0m [32m INFO[0m Configuration: indexing=true, stats=true, max_requests=100, timeout=30000ms    
+[2m2025-08-10T13:04:19.440666Z[0m [32m INFO[0m MCP server initialized successfully    
+[2m2025-08-10T13:04:19.440673Z[0m [32m INFO[0m Ready to accept JSON-RPC requests on stdin/stdout    
+[2m2025-08-10T13:04:19.440727Z[0m [32m INFO[0m Stdio transport started successfully    
+[2m2025-08-10T13:04:19.440763Z[0m [32m INFO[0m MCP server ready on stdio transport    
+[2m2025-08-10T13:04:19.441240Z[0m [32m INFO[0m EOF reached on stdin, transport closing    
+[2m2025-08-10T13:04:19.441275Z[0m [32m INFO[0m Transport closed, shutting down event loop    
+[2m2025-08-10T13:04:19.441290Z[0m [32m INFO[0m MCP server shutting down    
+[2m2025-08-10T13:04:19.441300Z[0m [32m INFO[0m Stdio transport stopped    
+[2m2025-08-10T13:04:19.441310Z[0m [32m INFO[0m MCP server event loop completed successfully    
+[2m2025-08-10T13:04:19.441318Z[0m [32m INFO[0m MCP server shutdown complete    
+
+[2025-08-10T13:04:19.461Z] Starting MCP server wrapper
+Binary: /home/cabdru/rag/target/debug/mcp_server
+Project: /home/cabdru/rag
+[2m2025-08-10T13:04:19.472062Z[0m [32m INFO[0m Starting MCP server for embed-search    
+[2m2025-08-10T13:04:19.472110Z[0m [32m INFO[0m Server name: embed-search-mcp    
+[2m2025-08-10T13:04:19.472577Z[0m [33m WARN[0m Config initialization failed: missing field `project_path`, initializing with test config    
+[2m2025-08-10T13:04:19.472601Z[0m [32m INFO[0m Using project path: /home/cabdru/rag    
+[2m2025-08-10T13:04:19.472615Z[0m [32m INFO[0m Configuration: indexing=true, stats=true, max_requests=100, timeout=30000ms    
+[2m2025-08-10T13:04:19.472630Z[0m [32m INFO[0m MCP server initialized successfully    
+[2m2025-08-10T13:04:19.472637Z[0m [32m INFO[0m Ready to accept JSON-RPC requests on stdin/stdout    
+[2m2025-08-10T13:04:19.472692Z[0m [32m INFO[0m Stdio transport started successfully    
+[2m2025-08-10T13:04:19.472705Z[0m [32m INFO[0m MCP server ready on stdio transport    
+[2m2025-08-10T13:04:19.473166Z[0m [32m INFO[0m EOF reached on stdin, transport closing    
+[2m2025-08-10T13:04:19.473199Z[0m [32m INFO[0m Transport closed, shutting down event loop    
+[2m2025-08-10T13:04:19.473211Z[0m [32m INFO[0m MCP server shutting down    
+[2m2025-08-10T13:04:19.473219Z[0m [32m INFO[0m Stdio transport stopped    
+[2m2025-08-10T13:04:19.473227Z[0m [32m INFO[0m MCP server event loop completed successfully    
+[2m2025-08-10T13:04:19.473233Z[0m [32m INFO[0m MCP server shutdown complete    
+[2025-08-10T13:04:19.474Z] Process exited with code 0, signal null
+[2m2025-08-10T13:04:19.489453Z[0m [32m INFO[0m Starting MCP server for embed-search    
+[2m2025-08-10T13:04:19.489510Z[0m [32m INFO[0m Server name: embed-search-mcp    
+[2m2025-08-10T13:04:19.489947Z[0m [33m WARN[0m Config initialization failed: missing field `project_path`, initializing with test config    
+[2m2025-08-10T13:04:19.489998Z[0m [32m INFO[0m Using project path: /home/cabdru/rag    
+[2m2025-08-10T13:04:19.490018Z[0m [32m INFO[0m Configuration: indexing=true, stats=true, max_requests=100, timeout=30000ms    
+[2m2025-08-10T13:04:19.490035Z[0m [32m INFO[0m MCP server initialized successfully    
+[2m2025-08-10T13:04:19.490044Z[0m [32m INFO[0m Ready to accept JSON-RPC requests on stdin/stdout    
+[2m2025-08-10T13:04:19.490097Z[0m [32m INFO[0m Stdio transport started successfully    
+[2m2025-08-10T13:04:19.490133Z[0m [32m INFO[0m MCP server ready on stdio transport    
+[2m2025-08-10T13:04:19.490556Z[0m [32m INFO[0m EOF reached on stdin, transport closing    
+[2m2025-08-10T13:04:19.490593Z[0m [32m INFO[0m Transport closed, shutting down event loop    
+[2m2025-08-10T13:04:19.490619Z[0m [32m INFO[0m MCP server shutting down    
+[2m2025-08-10T13:04:19.490632Z[0m [32m INFO[0m Stdio transport stopped    
+[2m2025-08-10T13:04:19.490642Z[0m [32m INFO[0m MCP server event loop completed successfully    
+[2m2025-08-10T13:04:19.490650Z[0m [32m INFO[0m MCP server shutdown complete    

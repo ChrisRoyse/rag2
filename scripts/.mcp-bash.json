@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "embed-search": {
+      "command": "/home/cabdru/rag/scripts/mcp_wrapper.sh",
+      "args": ["/home/cabdru/rag"],
+      "type": "stdio"
+    },
+    "claude-flow": {
+      "command": "npx",
+      "args": [
+        "claude-flow@alpha",
+        "mcp",
+        "start"
+      ],
+      "type": "stdio"
+    },
+    "ruv-swarm": {
+      "command": "npx",
+      "args": [
+        "ruv-swarm@latest",
+        "mcp",
+        "start"
+      ],
+      "type": "stdio"
+    }
+  }
+}
