@@ -14,7 +14,7 @@ use crate::mcp::{
     McpServer, SearchOrchestrator, OrchestratorConfig, 
     McpError, McpResult
 };
-use crate::search::UnifiedSearcher;
+use crate::search::BM25Searcher;
 use crate::mcp::tools::orchestrated_search::OrchestratedSearchTool;
 
 /// Production-ready MCP server with orchestrated search capabilities
@@ -27,29 +27,29 @@ pub struct EnhancedMcpServer {
 impl EnhancedMcpServer {
     /// Create enhanced MCP server with orchestration
     pub async fn new(project_path: PathBuf, db_path: PathBuf) -> McpResult<Self> {
-        // Initialize configuration first (required for UnifiedSearcher)
+        // Initialize configuration first (required for BM25Searcher)
         if let Err(_) = crate::config::Config::init() {
             // Config already initialized, that's fine
         }
         
-        // Create UnifiedSearcher for MCP server
-        let mcp_searcher = UnifiedSearcher::new(project_path.clone(), db_path.clone())
+        // Create BM25Searcher for MCP server
+        let mcp_searcher = BM25Searcher::new(project_path.clone(), db_path.clone())
             .await
             .map_err(|e| McpError::InternalError {
-                message: format!("Failed to create MCP UnifiedSearcher: {}", e),
+                message: format!("Failed to create MCP BM25Searcher: {}", e),
             })?;
         
         // Create MCP server
         let mcp_config = crate::mcp::config::McpConfig::new_test_config();
         let mcp_server = McpServer::new(mcp_searcher, mcp_config).await?;
         
-        // Create separate UnifiedSearcher for orchestrator
+        // Create separate BM25Searcher for orchestrator
         // Truth: This is necessary because we can't share the same instance
         // In production, you'd restructure to avoid this duplication
-        let orchestrator_searcher = UnifiedSearcher::new(project_path, db_path)
+        let orchestrator_searcher = BM25Searcher::new(project_path, db_path)
             .await
             .map_err(|e| McpError::InternalError {
-                message: format!("Failed to create Orchestrator UnifiedSearcher: {}", e),
+                message: format!("Failed to create Orchestrator BM25Searcher: {}", e),
             })?;
         
         // Configure orchestrator for production use
@@ -67,13 +67,13 @@ impl EnhancedMcpServer {
         
         // Create orchestrated search tool
         let orchestrated_search_tool = OrchestratedSearchTool::new(
-            // We need another UnifiedSearcher instance here - this demonstrates the architectural challenge
+            // We need another BM25Searcher instance here - this demonstrates the architectural challenge
             // In production, you'd refactor to share the searcher more efficiently
-            UnifiedSearcher::new(
+            BM25Searcher::new(
                 std::env::current_dir().unwrap_or_default(), 
                 std::env::current_dir().unwrap_or_default().join(".embed-search")
             ).await.map_err(|e| McpError::InternalError {
-                message: format!("Failed to create tool UnifiedSearcher: {}", e),
+                message: format!("Failed to create tool BM25Searcher: {}", e),
             })?,
             None
         ).await?;

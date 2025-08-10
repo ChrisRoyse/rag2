@@ -98,9 +98,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Use current directory instead of temp directory to avoid tempfile dependency
     let project_path = std::env::current_dir()?;
     
-    // Create a simple UnifiedSearcher
+    // Create a simple BM25Searcher
     let db_path = project_path.join(".embed-search");
-    let searcher = embed_search::search::unified::UnifiedSearcher::new(project_path.clone(), db_path)
+    let searcher = embed_search::search::unified::BM25Searcher::new(project_path.clone(), db_path)
         .await?;
     
     // Create MCP server

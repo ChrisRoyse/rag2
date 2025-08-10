@@ -9,42 +9,24 @@ pub struct ExactMatch {
     pub line_content: String,
 }
 
-// Declare modules in dependency order (no circular refs)
-pub mod native_search;     // ✅ No dependencies
-pub mod preprocessing;     // ✅ No dependencies
-pub mod bm25;              // ✅ No dependencies
-pub mod text_processor;    // ✅ No dependencies
-pub mod inverted_index;    // ✅ Depends only on bm25
-pub mod cache;             // ✅ Depends only on basic types
-pub mod fusion;            // ✅ Depends on bm25
+// CLEANED UP: Essential modules only - duplicates removed
+pub mod preprocessing;     // ✅ Text preprocessing utilities
+pub mod bm25;              // ✅ Main BM25 implementation (ONLY ONE)
+pub mod text_processor;    // ✅ Text processing utilities
+pub mod inverted_index;    // ✅ Inverted index data structure
+pub mod cache;             // ✅ Search result caching
 pub mod config;            // ✅ Search configuration
-pub mod simple_searcher;   // ✅ Basic searcher (BM25+Tantivy) with graceful degradation - NO Tree-sitter by design
-pub mod bm25_fixed;        // ✅ Fixed BM25 implementation
-pub mod simple_bm25;       // ✅ Simple BM25 implementation (100 lines max)
-pub mod unified;           // ✅ Depends on everything above
-// tree-sitter removed for compilation
+pub mod symbol_index;      // ✅ Symbol indexing for code search
 #[cfg(feature = "tantivy")]
-pub mod tantivy_search;
-#[cfg(feature = "tantivy")]
-pub mod search_adapter;
-pub mod working_fuzzy_search;
+pub mod tantivy_search;    // ✅ Tantivy full-text search (ONLY ONE)
 
-// Re-export ONLY non-circular items
-pub use native_search::{NativeSearcher, SearchMatch};
+// Re-export essential types only - duplicates removed
 pub use preprocessing::QueryPreprocessor;
-pub use bm25::{BM25Engine, BM25Match, BM25Document, Token as BM25Token};
+pub use bm25::{BM25Engine, BM25Engine as BM25Searcher, BM25Match, BM25Document, Token as BM25Token};
 pub use text_processor::{CodeTextProcessor, ProcessedToken, TokenType};
 pub use inverted_index::{InvertedIndex, DocumentMetadata};
-pub use fusion::{SimpleFusion, FusedResult, MatchType};
-pub use unified::UnifiedSearcher;
 pub use config::SearchConfig;
-pub use simple_searcher::{SimpleSearcher, SimpleSearchResult};
-pub use bm25_fixed::BM25Engine as BM25EngineFixed;
-pub use simple_bm25::{SimpleBM25, BM25Result};
+// REMOVED: pub use symbol_index::{SymbolIndex, SymbolInfo}; // tree-sitter dependencies missing
 pub use cache::SearchResult;
-// DO NOT re-export cache::SearchCache - causes circular deps
-// tree-sitter exports removed
 #[cfg(feature = "tantivy")]
 pub use tantivy_search::TantivySearcher;
-#[cfg(feature = "tantivy")]
-pub use search_adapter::{TextSearcher, create_text_searcher, create_text_searcher_with_root};

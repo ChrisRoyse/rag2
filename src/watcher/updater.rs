@@ -1,16 +1,16 @@
 use std::sync::{Arc, RwLock};
 use tokio::sync::mpsc;
 
-use crate::search::unified::UnifiedSearcher;
+BM25Searcher;
 use super::events::{FileEvent, EventType};
 
 pub struct IndexUpdater {
-    searcher: Arc<RwLock<UnifiedSearcher>>,
+    searcher: Arc<RwLock<BM25Searcher>>,
 }
 
 impl IndexUpdater {
     pub fn new(
-        searcher: Arc<RwLock<UnifiedSearcher>>,
+        searcher: Arc<RwLock<BM25Searcher>>,
         _rx: mpsc::UnboundedReceiver<FileEvent>,
     ) -> Self {
         Self {

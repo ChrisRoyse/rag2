@@ -15,8 +15,9 @@ pub mod storage {
     pub mod safe_vectordb;  // New thread-safe implementation
     // Legacy modules to be replaced
     pub mod simple_vectordb;
-    pub mod lancedb_storage;
-    pub mod lancedb;
+    // LanceDB disabled - too many dependencies
+    // pub mod lancedb_storage;
+    // pub mod lancedb;
 }
 
 // Bounded cache system (Phase 1)

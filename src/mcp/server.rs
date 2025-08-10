@@ -12,13 +12,13 @@ use crate::mcp::{
         StatsCapabilities, ServerInfo, PerformanceStats,
     },
 };
-use crate::search::unified::UnifiedSearcher;
+BM25Searcher;
 use crate::mcp::tools::ToolRegistry;
 
-/// MCP server implementation that integrates with UnifiedSearcher
+/// MCP server implementation that integrates with BM25Searcher
 pub struct McpServer {
     config: McpConfig,
-    searcher: Arc<RwLock<UnifiedSearcher>>,
+    searcher: Arc<RwLock<BM25Searcher>>,
     tool_registry: ToolRegistry,
     protocol_handler: ProtocolHandler,
     start_time: Instant,
@@ -33,7 +33,7 @@ pub struct McpServer {
 impl McpServer {
     /// Create a new MCP server with the provided searcher
     pub async fn new(
-        searcher: UnifiedSearcher, 
+        searcher: BM25Searcher, 
         config: McpConfig
     ) -> McpResult<Self> {
         // Validate the configuration first
@@ -68,10 +68,10 @@ impl McpServer {
             })?;
         
         let db_path = project_path.join(".embed-search");
-        let searcher = UnifiedSearcher::new(project_path, db_path)
+        let searcher = BM25Searcher::new(project_path, db_path)
             .await
             .map_err(|e| McpError::InternalError {
-                message: format!("Failed to create UnifiedSearcher: {}", e),
+                message: format!("Failed to create BM25Searcher: {}", e),
             })?;
 
         Self::new(searcher, mcp_config).await
@@ -88,10 +88,10 @@ impl McpServer {
             })?;
         
         let db_path = project_path.join(".embed-search");
-        let searcher = UnifiedSearcher::new(project_path, db_path)
+        let searcher = BM25Searcher::new(project_path, db_path)
             .await
             .map_err(|e| McpError::InternalError {
-                message: format!("Failed to create UnifiedSearcher: {}", e),
+                message: format!("Failed to create BM25Searcher: {}", e),
             })?;
 
         Self::new(searcher, mcp_config).await
@@ -401,7 +401,7 @@ mod tests {
     async fn test_mcp_server_creation() {
         let temp_dir = TempDir::new().unwrap();
         
-        // Initialize config first (required for UnifiedSearcher)
+        // Initialize config first (required for BM25Searcher)
         std::env::set_var("EMBED_LOG_LEVEL", "info");
         if let Err(_) = crate::config::Config::init() {
             // Config already initialized, that's ok

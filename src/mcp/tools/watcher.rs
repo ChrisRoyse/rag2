@@ -7,16 +7,16 @@ use crate::mcp::{
     protocol::JsonRpcResponse,
     watcher::{McpWatcher, EventFilter},
 };
-use crate::search::unified::UnifiedSearcher;
+BM25Searcher;
 
 /// MCP tool handler for watcher-related operations
 pub struct WatcherTool {
     watcher: Option<Arc<McpWatcher>>,
-    searcher: Arc<RwLock<UnifiedSearcher>>,
+    searcher: Arc<RwLock<BM25Searcher>>,
 }
 
 impl WatcherTool {
-    pub fn new(searcher: Arc<RwLock<UnifiedSearcher>>) -> Self {
+    pub fn new(searcher: Arc<RwLock<BM25Searcher>>) -> Self {
         Self {
             watcher: None,
             searcher,
@@ -208,7 +208,7 @@ impl WatcherTool {
 mod tests {
     use super::*;
     use tempfile::TempDir;
-    use crate::search::unified::UnifiedSearcher;
+    BM25Searcher;
 
     #[tokio::test]
     async fn test_watcher_tool_lifecycle() {
@@ -220,7 +220,7 @@ mod tests {
         }
 
         let searcher = Arc::new(RwLock::new(
-            UnifiedSearcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
+            BM25Searcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
                 .await
                 .unwrap()
         ));
@@ -255,7 +255,7 @@ mod tests {
         }
 
         let searcher = Arc::new(RwLock::new(
-            UnifiedSearcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
+            BM25Searcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
                 .await
                 .unwrap()
         ));
@@ -292,7 +292,7 @@ mod tests {
         }
 
         let searcher = Arc::new(RwLock::new(
-            UnifiedSearcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
+            BM25Searcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
                 .await
                 .unwrap()
         ));

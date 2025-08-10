@@ -10,7 +10,7 @@ use serde::Deserialize;
 use crate::mcp::{McpError, McpResult};
 use crate::mcp::protocol::JsonRpcResponse;
 use crate::mcp::types::{StatsResponse, IndexStats, CacheStats, PerformanceStats, ServerStats};
-use crate::search::unified::UnifiedSearcher;
+use crate::search::BM25Searcher;
 
 /// Parameters for get_status tool
 #[derive(Debug, Deserialize)]
@@ -28,7 +28,7 @@ struct StatusParams {
 /// Execute get_status tool
 /// Returns comprehensive system status and statistics
 pub async fn execute_get_status(
-    searcher: &Arc<RwLock<UnifiedSearcher>>,
+    searcher: &Arc<RwLock<BM25Searcher>>,
     params: &serde_json::Value,
     id: Option<serde_json::Value>
 ) -> McpResult<JsonRpcResponse> {
@@ -52,7 +52,7 @@ pub async fn execute_get_status(
     
     let start_time = std::time::Instant::now();
     
-    // Collect statistics from UnifiedSearcher
+    // Collect statistics from BM25Searcher
     let searcher_guard = searcher.read().await;
     
     // Get searcher statistics if ML feature is enabled
@@ -72,7 +72,7 @@ pub async fn execute_get_status(
         #[cfg(feature = "ml")]
         {
             Some(IndexStats {
-                total_files: 0, // Would need to track this in UnifiedSearcher
+                total_files: 0, // Would need to track this in BM25Searcher
                 total_chunks: searcher_stats.total_embeddings as u32,
                 total_symbols: 0, // Would need symbol count from tree-sitter
                 index_size_bytes: 0, // Would need to calculate from all indexes

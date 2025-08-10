@@ -7,13 +7,13 @@ use std::time::Duration;
 use tokio::sync::mpsc;
 use anyhow::Result;
 
-use crate::search::unified::UnifiedSearcher;
+BM25Searcher;
 use super::events::{FileEvent, EventType};
 use super::updater::IndexUpdater;
 use super::edge_cases::EdgeCaseHandler;
 
 pub struct GitWatcher {
-    searcher: Arc<RwLock<UnifiedSearcher>>,
+    searcher: Arc<RwLock<BM25Searcher>>,
     gitignore: Gitignore,
     update_queue: mpsc::UnboundedSender<FileEvent>,
     updater: Arc<IndexUpdater>,
@@ -26,7 +26,7 @@ pub struct GitWatcher {
 impl GitWatcher {
     pub fn new(
         repo_path: &Path,
-        searcher: Arc<RwLock<UnifiedSearcher>>,
+        searcher: Arc<RwLock<BM25Searcher>>,
     ) -> Result<Self> {
         // Validate and normalize the path
         let normalized_path = EdgeCaseHandler::normalize_path(repo_path);

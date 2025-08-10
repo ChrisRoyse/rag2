@@ -1,13 +1,13 @@
 //! MCP tool implementations for embed-search server
 //!
-//! This module contains all MCP tool implementations that integrate with UnifiedSearcher
+//! This module contains all MCP tool implementations that integrate with BM25Searcher
 //! to provide search, indexing, status, and management capabilities via MCP protocol.
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use crate::mcp::{McpError, McpResult};
 use crate::mcp::protocol::JsonRpcResponse;
-use crate::search::unified::UnifiedSearcher;
+use crate::search::BM25Searcher;
 
 pub mod index;
 pub mod search;
@@ -19,14 +19,14 @@ pub mod watcher;
 /// Tool registry for MCP server
 /// Provides centralized access to all tool implementations
 pub struct ToolRegistry {
-    searcher: Arc<RwLock<UnifiedSearcher>>,
+    searcher: Arc<RwLock<BM25Searcher>>,
     orchestrated_search_tool: Option<Arc<orchestrated_search::OrchestratedSearchTool>>,
     watcher_tool: Option<Arc<tokio::sync::Mutex<watcher::WatcherTool>>>,
 }
 
 impl ToolRegistry {
-    /// Create new tool registry with UnifiedSearcher instance
-    pub fn new(searcher: Arc<RwLock<UnifiedSearcher>>) -> Self {
+    /// Create new tool registry with BM25Searcher instance
+    pub fn new(searcher: Arc<RwLock<BM25Searcher>>) -> Self {
         Self { 
             searcher,
             orchestrated_search_tool: None,
@@ -38,11 +38,11 @@ impl ToolRegistry {
     pub async fn enable_orchestrated_search(&mut self, _config: Option<crate::mcp::orchestrator::OrchestratorConfig>) -> McpResult<()> {
         let searcher_guard = self.searcher.read().await;
         
-        // We need to create a new UnifiedSearcher instance for the orchestrator
+        // We need to create a new BM25Searcher instance for the orchestrator
         // because we can't move out of the Arc<RwLock<>>
         // This is a limitation - in practice you'd want to restructure this
         
-        println!("⚠️ Note: Orchestrated search requires separate UnifiedSearcher instance");
+        println!("⚠️ Note: Orchestrated search requires separate BM25Searcher instance");
         println!("💡 For production, restructure to share searcher between registry and orchestrator");
         
         drop(searcher_guard);
@@ -53,7 +53,7 @@ impl ToolRegistry {
     }
     
     /// Get searcher instance for tool implementations
-    pub fn searcher(&self) -> Arc<RwLock<UnifiedSearcher>> {
+    pub fn searcher(&self) -> Arc<RwLock<BM25Searcher>> {
         self.searcher.clone()
     }
     

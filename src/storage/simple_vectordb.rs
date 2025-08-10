@@ -82,6 +82,27 @@ pub struct VectorStorage {
 
 #[cfg(feature = "vectordb")]
 impl VectorStorage {
+    /// Create a combined embedder-storage instance
+    #[cfg(feature = "ml")]
+    pub async fn with_embedder() -> Result<VectorStorageWithEmbedder, StorageError> {
+        use crate::embedding::simple_nomic::SimpleNomicEmbedder;
+        use std::path::PathBuf;
+        
+        // Default storage path
+        let storage_path = PathBuf::from("./data/vector_storage.db");
+        
+        let storage = Self::new(storage_path).await?;
+        storage.init_schema().await?;
+        
+        let embedder = SimpleNomicEmbedder::get_global()
+            .await
+            .map_err(|e| StorageError::DatabaseError(format!("Failed to initialize embedder: {}", e)))?;
+        
+        Ok(VectorStorageWithEmbedder {
+            storage,
+            embedder,
+        })
+    }
     pub async fn new(db_path: PathBuf) -> Result<Self, StorageError> {
         // Ensure parent directory exists
         if let Some(parent) = db_path.parent() {
@@ -300,6 +321,74 @@ fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
     }
     
     dot_product / (norm_a * norm_b)
+}
+
+/// Combined storage + embedder for simple integration
+#[cfg(all(feature = "vectordb", feature = "ml"))]
+pub struct VectorStorageWithEmbedder {
+    storage: VectorStorage,
+    embedder: Arc<crate::embedding::simple_nomic::SimpleNomicEmbedder>,
+}
+
+#[cfg(all(feature = "vectordb", feature = "ml"))]
+impl VectorStorageWithEmbedder {
+    /// Embed text and store it
+    pub async fn embed_and_store(
+        &self,
+        file_path: &str,
+        chunk_index: usize,
+        chunk: &Chunk,
+    ) -> Result<(), StorageError> {
+        let embedding = self.embedder.embed(&chunk.content)
+            .map_err(|e| StorageError::InvalidInput(format!("Embedding failed: {}", e)))?;
+        
+        self.storage.insert_embedding(file_path, chunk_index, chunk, embedding).await
+    }
+    
+    /// Embed text and search for similar content
+    pub async fn embed_and_search(
+        &self,
+        query_text: &str,
+        limit: usize,
+    ) -> Result<Vec<EmbeddingRecord>, StorageError> {
+        let query_embedding = self.embedder.embed(query_text)
+            .map_err(|e| StorageError::SearchError(format!("Query embedding failed: {}", e)))?;
+        
+        self.storage.search_similar(query_embedding, limit).await
+    }
+    
+    /// Embed multiple texts and store them
+    pub async fn embed_and_store_batch(
+        &self,
+        items: Vec<(&str, usize, Chunk)>,
+    ) -> Result<(), StorageError> {
+        if items.is_empty() {
+            return Ok(());
+        }
+        
+        // Extract texts for batch embedding
+        let texts: Vec<&str> = items.iter().map(|(_, _, chunk)| chunk.content.as_str()).collect();
+        let embeddings = self.embedder.embed_batch(&texts)
+            .map_err(|e| StorageError::InvalidInput(format!("Batch embedding failed: {}", e)))?;
+        
+        // Combine with original data
+        let batch_data: Vec<(&str, usize, Chunk, Vec<f32>)> = items.into_iter()
+            .zip(embeddings.into_iter())
+            .map(|((file_path, chunk_index, chunk), embedding)| (file_path, chunk_index, chunk, embedding))
+            .collect();
+        
+        self.storage.insert_batch(batch_data).await
+    }
+    
+    /// Get the underlying storage reference
+    pub fn storage(&self) -> &VectorStorage {
+        &self.storage
+    }
+    
+    /// Get embedding dimensions
+    pub fn dimensions(&self) -> usize {
+        self.embedder.dimensions()
+    }
 }
 
 // Thread safety is automatically provided by Arc<RwLock<>> and sled::Db

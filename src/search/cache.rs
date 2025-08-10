@@ -5,7 +5,14 @@ use serde::{Serialize, Deserialize};
 use crate::config::Config;
 use crate::chunking::{ChunkContext};
 // Use MatchType from fusion module
-use crate::search::fusion::MatchType;
+// REMOVED: use crate::search::fusion::MatchType; // Module deleted in cleanup
+// Define MatchType locally since fusion module was deleted
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub enum MatchType {
+    Exact,
+    Fuzzy,
+    Semantic,
+}
 
 // Define SearchResult locally to avoid circular dependency
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -204,7 +211,7 @@ mod tests {
                 target_index: 0,
             },
             1.0,
-            crate::search::fusion::MatchType::Exact,
+            MatchType::Exact,
         )
     }
     

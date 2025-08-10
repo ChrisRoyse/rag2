@@ -10,7 +10,7 @@ use serde::Deserialize;
 use crate::mcp::{McpError, McpResult};
 use crate::mcp::protocol::JsonRpcResponse;
 use crate::mcp::types::{SearchResponse, SearchMatch, SearchType};
-use crate::search::unified::UnifiedSearcher;
+use crate::search::BM25Searcher;
 
 /// Parameters for search tool
 #[derive(Debug, Deserialize)]
@@ -26,10 +26,10 @@ struct SearchParams {
 }
 
 /// Execute search tool with parallel backend execution
-/// UnifiedSearcher already executes all 4 backends in parallel using tokio::join!
+/// BM25Searcher already executes all 4 backends in parallel using tokio::join!
 /// This achieves ~70% latency reduction compared to sequential execution
 pub async fn execute_search(
-    searcher: &Arc<RwLock<UnifiedSearcher>>,
+    searcher: &Arc<RwLock<BM25Searcher>>,
     params: &serde_json::Value,
     id: Option<serde_json::Value>
 ) -> McpResult<JsonRpcResponse> {
@@ -52,7 +52,7 @@ pub async fn execute_search(
     
     let start_time = std::time::Instant::now();
     
-    // Use UnifiedSearcher's parallel search implementation
+    // Use BM25Searcher's parallel search implementation
     // It already executes all 4 backends (BM25, Exact, Semantic, Symbol) in parallel using tokio::join!
     let searcher_guard = searcher.read().await;
     let search_results = searcher_guard.search(&search_params.query).await

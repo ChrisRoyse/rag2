@@ -1,9 +1,9 @@
 //! Search Orchestrator for MCP - Enhanced coordination and monitoring
 //!
-//! This orchestrator builds on UnifiedSearcher's existing parallel execution
+//! This orchestrator builds on BM25Searcher's existing parallel execution
 //! to add performance monitoring, graceful failure handling, and resource management.
 //! 
-//! Truth: UnifiedSearcher already has parallel execution via tokio::join!
+//! Truth: BM25Searcher already has parallel execution via tokio::join!
 //! This orchestrator adds the missing coordination layer for production use.
 
 use std::sync::Arc;
@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 use rustc_hash::FxHashMap;
 
 use crate::mcp::{McpError, McpResult};
-use crate::search::{UnifiedSearcher, SearchResult};
-use crate::search::fusion::SimpleFusion;
+use crate::search::{BM25Searcher, SearchResult};
+// REMOVED: use crate::search::fusion::SimpleFusion; // fusion module deleted
 use crate::config::Config;
 
 /// Performance metrics for search operations
@@ -67,10 +67,10 @@ impl Default for OrchestratorConfig {
 }
 
 /// Search orchestrator that coordinates parallel execution and monitors performance
-/// Wraps and enhances UnifiedSearcher's existing parallel capabilities
+/// Wraps and enhances BM25Searcher's existing parallel capabilities
 pub struct SearchOrchestrator {
-    searcher: Arc<RwLock<UnifiedSearcher>>,
-    fusion: SimpleFusion,
+    searcher: Arc<RwLock<BM25Searcher>>,
+    // REMOVED: fusion: SimpleFusion, // fusion module deleted
     config: OrchestratorConfig,
     
     // Performance monitoring
@@ -113,8 +113,8 @@ pub struct BackendStatus {
 }
 
 impl SearchOrchestrator {
-    /// Create new search orchestrator wrapping UnifiedSearcher
-    pub async fn new(searcher: UnifiedSearcher, config: Option<OrchestratorConfig>) -> McpResult<Self> {
+    /// Create new search orchestrator wrapping BM25Searcher
+    pub async fn new(searcher: BM25Searcher, config: Option<OrchestratorConfig>) -> McpResult<Self> {
         let config = config.unwrap_or_default();
         let searcher_arc = Arc::new(RwLock::new(searcher));
         
@@ -137,7 +137,7 @@ impl SearchOrchestrator {
         
         Ok(Self {
             searcher: searcher_arc,
-            fusion: SimpleFusion::new(),
+            // REMOVED: fusion: SimpleFusion::new(), // fusion module deleted
             search_semaphore: Arc::new(Semaphore::new(config.max_concurrent_searches)),
             active_searches: Arc::new(RwLock::new(0)),
             metrics: Arc::new(RwLock::new(metrics)),
@@ -148,7 +148,7 @@ impl SearchOrchestrator {
     }
     
     /// Execute orchestrated search with enhanced monitoring and failure handling
-    /// This builds on UnifiedSearcher's existing parallel execution (tokio::join!)
+    /// This builds on BM25Searcher's existing parallel execution (tokio::join!)
     /// and adds the orchestration layer for production use
     pub async fn search(&self, query: &str) -> McpResult<OrchestratedSearchResult> {
         // Acquire semaphore permit for concurrency control
@@ -221,8 +221,8 @@ impl SearchOrchestrator {
         }
     }
     
-    /// Enhanced search execution that builds on UnifiedSearcher's parallel capabilities
-    /// Truth: UnifiedSearcher.search() already does tokio::join! for parallel execution
+    /// Enhanced search execution that builds on BM25Searcher's parallel capabilities
+    /// Truth: BM25Searcher.search() already does tokio::join! for parallel execution
     /// This adds monitoring, failure handling, and resource tracking on top
     async fn execute_enhanced_search(
         &self, 
@@ -238,8 +238,8 @@ impl SearchOrchestrator {
             self.log_resource_usage().await;
         }
         
-        // Execute the search using UnifiedSearcher's existing parallel implementation
-        // Truth: UnifiedSearcher already uses tokio::join! for 70% latency reduction
+        // Execute the search using BM25Searcher's existing parallel implementation
+        // Truth: BM25Searcher already uses tokio::join! for 70% latency reduction
         let searcher = self.searcher.read().await;
         let search_start = Instant::now();
         
@@ -459,7 +459,7 @@ mod tests {
             // Already initialized, that's ok
         }
         
-        let searcher = UnifiedSearcher::new(
+        let searcher = BM25Searcher::new(
             temp_dir.path().to_path_buf(),
             temp_dir.path().join("db")
         ).await.unwrap();
@@ -530,7 +530,7 @@ mod tests {
             // Already initialized
         }
         
-        let searcher = UnifiedSearcher::new(
+        let searcher = BM25Searcher::new(
             temp_dir.path().to_path_buf(),
             temp_dir.path().join("db")
         ).await.unwrap();

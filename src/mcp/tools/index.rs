@@ -1,7 +1,7 @@
 //! Index directory tool implementation for MCP server
 //!
 //! Provides directory indexing functionality with comprehensive error handling
-//! and integration with UnifiedSearcher's indexing capabilities.
+//! and integration with BM25Searcher's indexing capabilities.
 
 use std::sync::Arc;
 use std::path::PathBuf;
@@ -11,7 +11,7 @@ use serde::Deserialize;
 use crate::mcp::{McpError, McpResult};
 use crate::mcp::protocol::JsonRpcResponse;
 use crate::mcp::types::IndexResponse;
-use crate::search::unified::UnifiedSearcher;
+use crate::search::BM25Searcher;
 
 /// Parameters for index_directory tool
 #[derive(Debug, Deserialize)]
@@ -29,7 +29,7 @@ struct IndexDirectoryParams {
 /// Execute index_directory tool
 /// Indexes specified directory with all files matching criteria
 pub async fn execute_index_directory(
-    searcher: &Arc<RwLock<UnifiedSearcher>>,
+    searcher: &Arc<RwLock<BM25Searcher>>,
     params: &serde_json::Value,
     id: Option<serde_json::Value>
 ) -> McpResult<JsonRpcResponse> {

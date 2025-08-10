@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use embed_search::{
-    search::unified::UnifiedSearcher,
+    search::unified::BM25Searcher,
     config::Config,
 };
 
@@ -126,7 +126,7 @@ async fn main() -> Result<()> {
 async fn index_command(path: PathBuf, project_path: PathBuf, db_path: PathBuf) -> Result<()> {
     println!("📂 Indexing path: {:?}", path);
     
-    let searcher = UnifiedSearcher::new(project_path, db_path).await?;
+    let searcher = BM25Searcher::new(project_path, db_path).await?;
     
     let full_path = if path.is_absolute() {
         path
@@ -150,7 +150,7 @@ async fn index_command(path: PathBuf, project_path: PathBuf, db_path: PathBuf) -
 async fn search_command(query: &str, project_path: PathBuf, db_path: PathBuf) -> Result<()> {
     println!("🔍 Searching for: \"{}\"", query);
     
-    let searcher = UnifiedSearcher::new(project_path, db_path).await?;
+    let searcher = BM25Searcher::new(project_path, db_path).await?;
     let results = searcher.search(query).await?;
     
     if results.is_empty() {
@@ -189,7 +189,7 @@ async fn search_command(query: &str, project_path: PathBuf, db_path: PathBuf) ->
 async fn watch_command(project_path: PathBuf, db_path: PathBuf) -> Result<()> {
     println!("👁️  Starting file watch mode...");
     
-    let searcher = Arc::new(UnifiedSearcher::new(project_path.clone(), db_path.clone()).await?);
+    let searcher = Arc::new(BM25Searcher::new(project_path.clone(), db_path.clone()).await?);
     let storage = Arc::new(RwLock::new(LanceDBStorage::new(db_path).await?));
     
     let watch = WatchCommand::new(project_path, searcher, storage)?;
@@ -216,7 +216,7 @@ async fn watch_command(_project_path: PathBuf, _db_path: PathBuf) -> Result<()> 
 async fn update_command(project_path: PathBuf, db_path: PathBuf) -> Result<()> {
     println!("🔄 Checking for file changes...");
     
-    let searcher = Arc::new(UnifiedSearcher::new(project_path.clone(), db_path.clone()).await?);
+    let searcher = Arc::new(BM25Searcher::new(project_path.clone(), db_path.clone()).await?);
     let storage = Arc::new(RwLock::new(LanceDBStorage::new(db_path).await?));
     
     let watch = WatchCommand::new(project_path, searcher, storage)?;
@@ -236,7 +236,7 @@ async fn update_command(_project_path: PathBuf, _db_path: PathBuf) -> Result<()>
 async fn clear_command(project_path: PathBuf, db_path: PathBuf) -> Result<()> {
     println!("🧹 Clearing all indexed data...");
     
-    let searcher = UnifiedSearcher::new(project_path, db_path).await?;
+    let searcher = BM25Searcher::new(project_path, db_path).await?;
     searcher.clear_index().await?;
     
     println!("✅ Index cleared");
@@ -248,7 +248,7 @@ async fn stats_command(project_path: PathBuf, db_path: PathBuf) -> Result<()> {
     println!("📊 Index Statistics");
     println!("==================");
     
-    let searcher = UnifiedSearcher::new(project_path, db_path).await?;
+    let searcher = BM25Searcher::new(project_path, db_path).await?;
     let stats = searcher.get_stats().await?;
     
     println!("Total embeddings: {}", stats.total_embeddings);
@@ -269,7 +269,7 @@ async fn test_command(project_path: PathBuf, db_path: PathBuf) -> Result<()> {
     
     // Clear index first
     println!("1️⃣  Clearing existing index...");
-    let searcher = UnifiedSearcher::new(project_path.clone(), db_path.clone()).await?;
+    let searcher = BM25Searcher::new(project_path.clone(), db_path.clone()).await?;
     searcher.clear_index().await?;
     
     // Index the vectortest directory

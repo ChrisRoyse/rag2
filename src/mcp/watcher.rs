@@ -6,7 +6,7 @@ use std::sync::{Arc as StdArc, RwLock as StdRwLock};
 use serde::{Serialize, Deserialize};
 
 use crate::watcher::{GitWatcher, FileEvent, EventType};
-use crate::search::unified::UnifiedSearcher;
+BM25Searcher;
 use crate::mcp::error::{McpError, McpResult};
 
 /// MCP-specific watcher event that includes additional metadata for clients
@@ -37,7 +37,7 @@ pub enum McpEventType {
 /// MCP integration layer for the GitWatcher
 pub struct McpWatcher {
     git_watcher: Arc<tokio::sync::RwLock<GitWatcher>>,
-    searcher: Arc<tokio::sync::RwLock<UnifiedSearcher>>,
+    searcher: Arc<tokio::sync::RwLock<BM25Searcher>>,
     event_broadcaster: broadcast::Sender<McpWatcherEvent>,
     event_receiver: broadcast::Receiver<McpWatcherEvent>,
     is_active: Arc<tokio::sync::Mutex<bool>>,
@@ -75,15 +75,15 @@ impl McpWatcher {
     /// Create new MCP watcher integration with existing GitWatcher
     pub async fn new(
         repo_path: PathBuf,
-        searcher: Arc<tokio::sync::RwLock<UnifiedSearcher>>,
+        searcher: Arc<tokio::sync::RwLock<BM25Searcher>>,
     ) -> McpResult<Self> {
         // Create the underlying GitWatcher
         // GitWatcher expects std::RwLock, but we work with tokio::RwLock
-        // For now, create a new UnifiedSearcher instance for the GitWatcher
+        // For now, create a new BM25Searcher instance for the GitWatcher
         // This is not ideal but necessary due to the RwLock type mismatch
         let searcher_for_git_watcher = {
             let db_path = repo_path.join(".embed-git-watcher");
-            let new_searcher = UnifiedSearcher::new(repo_path.clone(), db_path)
+            let new_searcher = BM25Searcher::new(repo_path.clone(), db_path)
                 .await
                 .map_err(|e| McpError::InternalError {
                     message: format!("Failed to create searcher for GitWatcher: {}", e),
@@ -311,7 +311,7 @@ impl McpWatcher {
 
         let _ = self.event_broadcaster.send(start_event);
 
-        // Trigger actual index update through UnifiedSearcher
+        // Trigger actual index update through BM25Searcher
         let result = {
             let searcher = self.searcher.write().await;
             searcher.index_directory(&self.watched_path).await
@@ -428,7 +428,7 @@ mod tests {
         }
         
         let searcher = Arc::new(tokio::sync::RwLock::new(
-            UnifiedSearcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
+            BM25Searcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
                 .await
                 .unwrap()
         ));
@@ -446,7 +446,7 @@ mod tests {
         }
         
         let searcher = Arc::new(tokio::sync::RwLock::new(
-            UnifiedSearcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
+            BM25Searcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
                 .await
                 .unwrap()
         ));
@@ -473,7 +473,7 @@ mod tests {
         }
         
         let searcher = Arc::new(tokio::sync::RwLock::new(
-            UnifiedSearcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
+            BM25Searcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
                 .await
                 .unwrap()
         ));
@@ -500,7 +500,7 @@ mod tests {
         }
         
         let searcher = Arc::new(tokio::sync::RwLock::new(
-            UnifiedSearcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
+            BM25Searcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
                 .await
                 .unwrap()
         ));

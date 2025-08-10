@@ -10,7 +10,7 @@ use serde::Deserialize;
 use crate::mcp::{McpError, McpResult};
 use crate::mcp::protocol::JsonRpcResponse;
 use crate::mcp::types::{ClearResponse, ClearType};
-use crate::search::unified::UnifiedSearcher;
+use crate::search::BM25Searcher;
 
 /// Parameters for clear_index tool
 #[derive(Debug, Deserialize)]
@@ -26,7 +26,7 @@ struct ClearParams {
 /// Execute clear_index tool
 /// Safely clears all or specified parts of the search index with proper confirmation
 pub async fn execute_clear_index(
-    searcher: &Arc<RwLock<UnifiedSearcher>>,
+    searcher: &Arc<RwLock<BM25Searcher>>,
     params: &serde_json::Value,
     id: Option<serde_json::Value>
 ) -> McpResult<JsonRpcResponse> {
@@ -91,7 +91,7 @@ pub async fn execute_clear_index(
 }
 
 /// Clear all indexes and caches
-async fn clear_all_indexes(searcher: &Arc<RwLock<UnifiedSearcher>>) -> McpResult<u32> {
+async fn clear_all_indexes(searcher: &Arc<RwLock<BM25Searcher>>) -> McpResult<u32> {
     println!("🧹 Clearing all indexes and caches...");
     
     let searcher_guard = searcher.read().await;
@@ -106,20 +106,20 @@ async fn clear_all_indexes(searcher: &Arc<RwLock<UnifiedSearcher>>) -> McpResult
 }
 
 /// Clear search index only (Tantivy/BM25)
-async fn clear_search_index(searcher: &Arc<RwLock<UnifiedSearcher>>) -> McpResult<u32> {
+async fn clear_search_index(searcher: &Arc<RwLock<BM25Searcher>>) -> McpResult<u32> {
     println!("🧹 Clearing search indexes (Tantivy/BM25)...");
     
-    // This would need to expose individual index clearing methods on UnifiedSearcher
+    // This would need to expose individual index clearing methods on BM25Searcher
     // For now, we use the full clear method which is safe but broader than needed
     clear_all_indexes(searcher).await
 }
 
 /// Clear vector index only (LanceDB/embeddings)
-async fn clear_vector_index(_searcher: &Arc<RwLock<UnifiedSearcher>>) -> McpResult<u32> {
+async fn clear_vector_index(_searcher: &Arc<RwLock<BM25Searcher>>) -> McpResult<u32> {
     #[cfg(feature = "vectordb")]
     {
         println!("🧹 Clearing vector index (LanceDB)...");
-        // Would need to expose vector-specific clearing on UnifiedSearcher
+        // Would need to expose vector-specific clearing on BM25Searcher
         clear_all_indexes(_searcher).await
     }
     #[cfg(not(feature = "vectordb"))]
@@ -131,11 +131,11 @@ async fn clear_vector_index(_searcher: &Arc<RwLock<UnifiedSearcher>>) -> McpResu
 }
 
 /// Clear symbol index only (Tree-sitter)
-async fn clear_symbol_index(_searcher: &Arc<RwLock<UnifiedSearcher>>) -> McpResult<u32> {
+async fn clear_symbol_index(_searcher: &Arc<RwLock<BM25Searcher>>) -> McpResult<u32> {
     // tree-sitter removed
     {
         println!("🧹 Clearing symbol index (Tree-sitter)...");
-        // Would need to expose symbol-specific clearing on UnifiedSearcher
+        // Would need to expose symbol-specific clearing on BM25Searcher
         let _ = clear_all_indexes(_searcher).await;
     }
     // tree-sitter removed
@@ -147,7 +147,7 @@ async fn clear_symbol_index(_searcher: &Arc<RwLock<UnifiedSearcher>>) -> McpResu
 }
 
 /// Clear cache only (no persistent data)
-async fn clear_cache_only(_searcher: &Arc<RwLock<UnifiedSearcher>>) -> McpResult<u32> {
+async fn clear_cache_only(_searcher: &Arc<RwLock<BM25Searcher>>) -> McpResult<u32> {
     println!("🧹 Clearing caches only...");
     
     // This would clear search result cache, embedding cache, etc.

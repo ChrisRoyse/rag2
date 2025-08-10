@@ -3,7 +3,7 @@
 //! This tool uses SearchOrchestrator to provide enhanced search capabilities
 //! with performance monitoring, graceful failure handling, and resource management.
 //! 
-//! Truth: This builds on UnifiedSearcher's existing tokio::join! parallel execution
+//! Truth: This builds on BM25Searcher's existing tokio::join! parallel execution
 //! and adds production-ready orchestration features.
 
 use std::sync::Arc;
@@ -14,7 +14,7 @@ use crate::mcp::{McpError, McpResult};
 use crate::mcp::protocol::JsonRpcResponse;
 use crate::mcp::types::{SearchMatch, SearchType};
 use crate::mcp::orchestrator::{SearchOrchestrator, OrchestratorConfig};
-use crate::search::unified::UnifiedSearcher;
+BM25Searcher;
 
 /// Enhanced search parameters with orchestration features
 #[derive(Debug, Deserialize)]
@@ -89,7 +89,7 @@ pub struct OrchestratedSearchTool {
 
 impl OrchestratedSearchTool {
     /// Create new orchestrated search tool
-    pub async fn new(searcher: UnifiedSearcher, config: Option<OrchestratorConfig>) -> McpResult<Self> {
+    pub async fn new(searcher: BM25Searcher, config: Option<OrchestratorConfig>) -> McpResult<Self> {
         let orchestrator = SearchOrchestrator::new(searcher, config).await?;
         
         Ok(Self {
@@ -268,7 +268,7 @@ mod tests {
             // Already initialized, that's ok
         }
         
-        let searcher = UnifiedSearcher::new(
+        let searcher = BM25Searcher::new(
             temp_dir.path().to_path_buf(),
             temp_dir.path().join("db")
         ).await.unwrap();
