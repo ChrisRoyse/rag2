@@ -237,6 +237,184 @@ impl UnifiedSearchAdapter {
             false
         }
     }
+
+    /// Advanced search using reciprocal rank fusion to intelligently combine BM25 and semantic results
+    /// 
+    /// This method performs separate BM25 and semantic searches, then uses reciprocal rank fusion
+    /// with proper score normalization to create a unified ranking that leverages both approaches.
+    /// 
+    /// # Arguments
+    /// * `query` - The search query string
+    /// * `max_results` - Maximum number of results to return
+    /// * `k` - RRF parameter (default 60) - higher values reduce the impact of rank differences
+    /// * `alpha` - Weight balance between BM25 (1.0) and semantic (0.0) results
+    /// 
+    /// # Returns
+    /// * `Result<Vec<UnifiedMatch>>` - Fused results ranked by combined score
+    pub async fn intelligent_fusion(
+        &self, 
+        query: &str, 
+        max_results: usize,
+        k: f32,
+        alpha: f32
+    ) -> Result<Vec<UnifiedMatch>> {
+        let mut bm25_results = Vec::new();
+        let mut semantic_results = Vec::new();
+
+        // Perform BM25 search
+        {
+            let bm25_guard = self.bm25_searcher.read().await;
+            let raw_bm25_results = bm25_guard.search(query, max_results * 2)?; // Get more for better fusion
+            drop(bm25_guard);
+            
+            bm25_results = raw_bm25_results.into_iter().map(UnifiedMatch::from).collect();
+        }
+
+        // Perform semantic search (if available)
+        #[cfg(all(feature = "ml", feature = "vectordb"))]
+        {
+            if let Some(ref embeddings_system) = self.embeddings_system {
+                match embeddings_system.embed_and_search(query, max_results * 2).await {
+                    Ok(raw_semantic_results) => {
+                        semantic_results = raw_semantic_results.into_iter().map(UnifiedMatch::from).collect();
+                    }
+                    Err(e) => {
+                        log::warn!("Semantic search failed during fusion: {}, using BM25 only", e);
+                    }
+                }
+            }
+        }
+
+        // Apply reciprocal rank fusion
+        self.apply_reciprocal_rank_fusion(bm25_results, semantic_results, max_results, k, alpha)
+    }
+
+    /// Apply reciprocal rank fusion to combine two result sets
+    /// 
+    /// RRF formula: score = α * (1/(k + rank_bm25)) + (1-α) * (1/(k + rank_semantic))
+    /// where rank starts at 1 for the top result
+    fn apply_reciprocal_rank_fusion(
+        &self,
+        mut bm25_results: Vec<UnifiedMatch>,
+        mut semantic_results: Vec<UnifiedMatch>,
+        max_results: usize,
+        k: f32,
+        alpha: f32
+    ) -> Result<Vec<UnifiedMatch>> {
+        use std::collections::HashMap;
+
+        // Normalize scores within each result set
+        self.normalize_scores(&mut bm25_results);
+        self.normalize_scores(&mut semantic_results);
+
+        // Create ranking maps (doc_id -> rank)
+        let bm25_ranks: HashMap<String, usize> = bm25_results
+            .iter()
+            .enumerate()
+            .map(|(idx, result)| (result.doc_id.clone(), idx + 1))
+            .collect();
+
+        let semantic_ranks: HashMap<String, usize> = semantic_results
+            .iter()
+            .enumerate()
+            .map(|(idx, result)| (result.doc_id.clone(), idx + 1))
+            .collect();
+
+        // Collect all unique document IDs
+        let mut all_doc_ids = std::collections::HashSet::new();
+        all_doc_ids.extend(bm25_ranks.keys().cloned());
+        all_doc_ids.extend(semantic_ranks.keys().cloned());
+
+        // Create document lookup maps for getting original results
+        let bm25_lookup: HashMap<String, &UnifiedMatch> = bm25_results
+            .iter()
+            .map(|result| (result.doc_id.clone(), result))
+            .collect();
+
+        let semantic_lookup: HashMap<String, &UnifiedMatch> = semantic_results
+            .iter()
+            .map(|result| (result.doc_id.clone(), result))
+            .collect();
+
+        // Calculate RRF scores for each document
+        let mut fused_results: Vec<UnifiedMatch> = all_doc_ids
+            .into_iter()
+            .filter_map(|doc_id| {
+                let bm25_rank = bm25_ranks.get(&doc_id);
+                let semantic_rank = semantic_ranks.get(&doc_id);
+
+                // Calculate RRF score
+                let bm25_score = bm25_rank.map_or(0.0, |rank| 1.0 / (k + *rank as f32));
+                let semantic_score = semantic_rank.map_or(0.0, |rank| 1.0 / (k + *rank as f32));
+                
+                let combined_score = alpha * bm25_score + (1.0 - alpha) * semantic_score;
+
+                // Skip documents with zero combined score
+                if combined_score <= 0.0 {
+                    return None;
+                }
+
+                // Create unified match with the best available information
+                let base_match = bm25_lookup.get(&doc_id)
+                    .or_else(|| semantic_lookup.get(&doc_id))?;
+
+                // Combine matched terms from both sources
+                let mut matched_terms = Vec::new();
+                if let Some(bm25_match) = bm25_lookup.get(&doc_id) {
+                    matched_terms.extend_from_slice(&bm25_match.matched_terms);
+                }
+
+                // Determine match type based on which sources contributed
+                let match_type = match (bm25_rank.is_some(), semantic_rank.is_some()) {
+                    (true, true) => "Hybrid".to_string(),
+                    (true, false) => "Statistical".to_string(),
+                    (false, true) => "Semantic".to_string(),
+                    (false, false) => unreachable!(), // This case is filtered out above
+                };
+
+                Some(UnifiedMatch {
+                    doc_id: doc_id.clone(),
+                    score: combined_score,
+                    match_type,
+                    matched_terms,
+                    content: base_match.content.clone(),
+                })
+            })
+            .collect();
+
+        // Sort by combined RRF score (descending)
+        fused_results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        
+        // Limit results
+        fused_results.truncate(max_results);
+
+        Ok(fused_results)
+    }
+
+    /// Normalize scores within a result set to [0, 1] range using min-max normalization
+    /// 
+    /// This ensures fair comparison between BM25 and semantic scores in the fusion process
+    fn normalize_scores(&self, results: &mut [UnifiedMatch]) {
+        if results.is_empty() {
+            return;
+        }
+
+        let min_score = results.iter().map(|r| r.score).fold(f32::INFINITY, f32::min);
+        let max_score = results.iter().map(|r| r.score).fold(f32::NEG_INFINITY, f32::max);
+
+        // Avoid division by zero
+        if (max_score - min_score).abs() < f32::EPSILON {
+            // All scores are the same, set them all to 1.0
+            for result in results {
+                result.score = 1.0;
+            }
+        } else {
+            // Apply min-max normalization: (score - min) / (max - min)
+            for result in results {
+                result.score = (result.score - min_score) / (max_score - min_score);
+            }
+        }
+    }
 }
 
 /// Search statistics across all backends

@@ -155,11 +155,17 @@ pub async fn execute_unified_search(
     
     let start_time = std::time::Instant::now();
     
-    // Use unified adapter for search
-    let unified_results = unified_adapter.search(&search_params.query, max_results as usize)
+    // Use unified adapter with intelligent fusion for optimal results
+    // Parameters: query, max_results, k (RRF parameter), alpha (BM25 weight)
+    let unified_results = unified_adapter.intelligent_fusion(
+        &search_params.query, 
+        max_results as usize,
+        60.0,   // k: standard RRF parameter
+        0.5   // alpha: equal weight for BM25 and semantic
+    )
         .await
         .map_err(|e| McpError::InternalError {
-            message: format!("Unified search failed: {}", e)
+            message: format!("Intelligent fusion search failed: {}", e)
         })?;
     
     let search_time = start_time.elapsed();

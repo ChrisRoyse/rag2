@@ -109,7 +109,8 @@ impl LanceDBStorage {
         }
 
         // Connect to LanceDB
-        let connection = lancedb::connect(&config.db_path).await
+        let connection = lancedb::connect(config.db_path.to_str()
+            .ok_or_else(|| LanceDBError::ConnectionError("Invalid UTF-8 in database path".into()))?).execute().await
             .map_err(|e| LanceDBError::ConnectionError(format!("Failed to connect to LanceDB: {}", e)))?;
 
         Ok(Self {
@@ -124,7 +125,7 @@ impl LanceDBStorage {
         let schema = self.create_schema();
         
         // Try to open existing table first
-        match self.connection.open_table(&self.config.table_name).await {
+        match self.connection.open_table(&self.config.table_name).execute().await {
             Ok(table) => {
                 self.table = Some(table);
                 Ok(())

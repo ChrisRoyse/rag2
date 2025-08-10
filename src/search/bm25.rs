@@ -17,7 +17,7 @@ pub struct BM25Engine {
     /// Term statistics: term -> (document_frequency, total_frequency)
     term_frequencies: FxHashMap<String, TermStats>,
     /// Document lengths: doc_id -> length
-    document_lengths: FxHashMap<String, usize>,
+    pub document_lengths: FxHashMap<String, usize>,
     
     /// Inverted index for fast lookups: term -> documents containing it
     inverted_index: FxHashMap<String, Vec<DocumentTerm>>,
@@ -86,6 +86,37 @@ impl BM25Engine {
             document_lengths: FxHashMap::default(),
             inverted_index: FxHashMap::default(),
         }
+    }
+    
+    /// Add a document to the BM25 index from a file path
+    pub fn add_document_from_file(&mut self, file_path: &str) -> Result<()> {
+        // Read file content
+        let content = std::fs::read_to_string(file_path)
+            .context(format!("Failed to read file: {}", file_path))?;
+        
+        // Tokenize content into Tokens
+        let tokens: Vec<Token> = content
+            .split_whitespace()
+            .enumerate()
+            .map(|(pos, word)| Token {
+                text: word.to_lowercase(),
+                position: pos,
+                importance_weight: 1.0,
+            })
+            .collect();
+        
+        // Create BM25Document from file
+        let doc = BM25Document {
+            id: file_path.to_string(),
+            file_path: file_path.to_string(),
+            chunk_index: 0,
+            tokens,
+            start_line: 1,
+            end_line: content.lines().count(),
+            language: None,
+        };
+        
+        self.add_document(doc)
     }
     
     /// Add a document to the BM25 index

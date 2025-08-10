@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "vectordb")]
 use crate::chunking::Chunk;
 #[cfg(feature = "vectordb")]
+use sled;
+#[cfg(feature = "vectordb")]
 #[derive(Debug)]
 pub enum StorageError {
     DatabaseError(String),
@@ -215,7 +217,7 @@ impl VectorStorage {
         // Find all keys for this file
         for result in self.db.scan_prefix(b"embedding:") {
             let (key, value) = result?;
-            let record: EmbeddingRecord = serde_json::from_slice(&value)?;
+            let record: EmbeddingRecord = serde_json::from_slice(value.as_ref())?;
             
             if record.file_path == file_path {
                 batch.remove(key);
@@ -255,7 +257,7 @@ impl VectorStorage {
         
         for result in self.db.scan_prefix(b"embedding:") {
             let (_, value) = result?;
-            let record: EmbeddingRecord = serde_json::from_slice(&value)?;
+            let record: EmbeddingRecord = serde_json::from_slice(value.as_ref())?;
             embeddings.push(record);
         }
         
@@ -275,7 +277,7 @@ impl VectorStorage {
         // Calculate cosine similarity with all embeddings (brute force for now)
         for result in self.db.scan_prefix(b"embedding:") {
             let (_, value) = result?;
-            let record: EmbeddingRecord = serde_json::from_slice(&value)?;
+            let record: EmbeddingRecord = serde_json::from_slice(value.as_ref())?;
             
             let similarity = cosine_similarity(&query_embedding, &record.embedding);
             similarities.push((similarity, record));

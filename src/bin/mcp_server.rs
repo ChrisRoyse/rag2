@@ -67,9 +67,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     log::info!("Starting MCP server for embed-search");
     log::info!("Server name: {}", args.server_name);
     
-    // Initialize embed-search config
-    if let Err(e) = Config::init() {
-        log::warn!("Config initialization failed, using defaults: {}", e);
+    // Initialize embed-search config - REQUIRED for MCP to work
+    // Try to initialize with config file, but don't fail if it doesn't exist
+    match Config::init() {
+        Ok(_) => {
+            log::info!("Configuration loaded successfully");
+        }
+        Err(e) => {
+            log::warn!("Config initialization failed: {}, initializing with test config", e);
+            // Use test config as fallback to ensure Config is initialized
+            if let Err(e2) = Config::init_test() {
+                log::error!("Failed to initialize even test config: {}", e2);
+                eprintln!("Error: Failed to initialize configuration: {}", e2);
+                std::process::exit(1);
+            }
+        }
     }
     
     // Determine project path

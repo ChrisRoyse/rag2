@@ -291,11 +291,16 @@ impl StdioMcpServerBuilder {
     
     pub async fn build(self) -> McpResult<super::TransportEventLoop<StdioTransport>> {
         // Create MCP server
-        let server = if let Some(project_path) = self.project_path {
+        let server = if let Some(config) = self.config {
+            // Use provided config directly
+            let searcher = crate::search::BM25Searcher::new();
+            crate::mcp::McpServer::new(searcher, config).await?
+        } else if let Some(project_path) = self.project_path {
+            // Load config from files
             crate::mcp::McpServer::with_project_path(project_path).await?
         } else {
             return Err(McpError::ConfigError {
-                message: "Project path is required".to_string(),
+                message: "Either config or project path is required".to_string(),
             });
         };
         

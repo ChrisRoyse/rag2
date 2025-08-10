@@ -113,7 +113,6 @@ tempfile = "3.12"
 [[bin]]
 name = "mcp_server"
 path = "src/bin/mcp_server.rs"
-required-features = ["mcp"]
 
 [[bin]]
 name = "verify_mcp_config"
@@ -146,7 +145,7 @@ core = []
 ml = ["dep:candle-core", "dep:candle-nn", "dep:candle-transformers", "dep:tokenizers", "dep:hf-hub", "dep:reqwest", "dep:dirs", "dep:memmap2", "dep:byteorder", "dep:rand"]
 
 # vectordb: Real LanceDB vector storage
-vectordb = ["dep:lancedb", "dep:arrow", "dep:arrow-array", "dep:arrow-schema"]
+vectordb = ["dep:lancedb", "dep:arrow", "dep:arrow-array", "dep:arrow-schema", "dep:sled"]
 
 # sled-storage: Lightweight fallback storage
 sled-storage = ["dep:sled"]

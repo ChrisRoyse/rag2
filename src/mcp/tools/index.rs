@@ -81,9 +81,10 @@ pub async fn execute_index_directory(
         }
     }
     
+    // Note: this stats variable is unused, the actual response is created below
     let stats = crate::mcp::types::IndexResponse {
         files_indexed,
-        chunks_created,
+        chunks_created: chunks_created.try_into().unwrap_or(0),
         symbols_extracted: 0, // Not implemented yet
         errors,
         index_time_ms: 0, // Will be set below

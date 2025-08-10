@@ -1,0 +1,31 @@
+# Embed-search configuration
+project_path = "/home/cabdru/rag"
+
+[storage]
+storage_type = "memory"
+
+# Project configuration
+project_path = "/home/cabdru/rag"
+
+[search]
+chunk_size = 512
+chunk_overlap = 128
+default_limit = 10
+
+[indexing]
+parallel_processing = true
+file_extensions = ["rs", "py", "js", "ts", "md", "txt", "json", "toml", "yaml", "yml"]
+
+[performance]
+max_file_size_mb = 50
+batch_size = 100
+
+[mcp]
+server_name = "embed-search-mcp"
+server_version = "0.1.0"
+enable_search = true
+enable_index = true
+enable_status = true
+enable_clear = true
+max_concurrent_requests = 100
+request_timeout_ms = 30000

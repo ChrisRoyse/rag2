@@ -11,7 +11,38 @@ pub mod lancedb_storage;     // Production LanceDB vector storage
 
 // Re-export commonly used types (CLEANED UP)
 pub use safe_vectordb::{VectorStorage, StorageConfig};
+
+// Export from simple_vectordb with feature flag check
+#[cfg(feature = "vectordb")]
 pub use simple_vectordb::{StorageError, EmbeddingRecord, VectorSchema};
+
+// Provide fallback types when vectordb feature is not enabled
+#[cfg(not(feature = "vectordb"))]
+pub use self::fallback_types::{StorageError, EmbeddingRecord, VectorSchema};
+
+#[cfg(not(feature = "vectordb"))]
+mod fallback_types {
+    use serde::{Deserialize, Serialize};
+    
+    #[derive(Debug, Clone)]
+    pub struct StorageError {
+        pub message: String,
+    }
+    
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct EmbeddingRecord {
+        pub id: String,
+        pub content: String,
+        pub embedding: Vec<f32>,
+        pub metadata: Option<serde_json::Value>,
+    }
+    
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct VectorSchema {
+        pub dimensions: usize,
+        pub distance_metric: String,
+    }
+}
 
 #[cfg(feature = "vectordb")]
 pub use lancedb_storage::{LanceDBStorage, LanceDBConfig, LanceDBRecord, LanceDBError, LanceDBStats};
