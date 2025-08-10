@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 use tokio::sync::mpsc;
 
-BM25Searcher;
+use crate::search::BM25Searcher;
 use super::events::{FileEvent, EventType};
 
 pub struct IndexUpdater {
@@ -26,44 +26,38 @@ impl IndexUpdater {
     
     pub async fn process_events(&self, events: Vec<FileEvent>) {
         for event in events {
-            self.process_event(event).await;
+            if let Err(e) = self.process_event(event).await {
+                eprintln!("Error processing event: {}", e);
+            }
         }
     }
 
-    async fn process_event(&self, event: FileEvent) {
+    async fn process_event(&self, event: FileEvent) -> Result<(), anyhow::Error> {
         // Clone the Arc to avoid holding the lock during async operations
         let searcher_arc = Arc::clone(&self.searcher);
         
-        // We need to handle async operations properly
-        // Since update_file and remove_file are async and need &self (not &mut self),
-        // we can call them on a read guard
-        let result = {
-            let searcher = match searcher_arc.read() {
-                Ok(s) => s,
-                Err(e) => {
-                    eprintln!("Failed to acquire searcher lock: {}", e);
-                    return;
-                }
-            };
-            
-            match event.event_type {
-                EventType::Created | EventType::Modified => {
-                    // Call async method on the read guard
-                    searcher.update_file(&event.path).await
-                }
-                EventType::Removed => {
-                    searcher.remove_file(&event.path).await
-                }
-            }
-        };
+        // BM25Engine methods need &mut self, so we need a write lock
+        let mut searcher = searcher_arc.write()
+            .map_err(|e| anyhow::anyhow!("Failed to acquire searcher write lock: {}", e))?;
         
-        match result {
-            Ok(_) => {
-                println!("✅ Processed {:?}: {:?}", event.event_type, event.path);
+        match event.event_type {
+            EventType::Created | EventType::Modified => {
+                // Index the file using BM25Engine's process_single_file method
+                searcher.process_single_file(&event.path).await?;
+                println!("✅ Indexed {:?}", event.path);
             }
-            Err(e) => {
-                eprintln!("Failed to process file {:?}: {}", event.path, e);
+            EventType::Removed => {
+                // Remove documents associated with this file path
+                let removed_count = searcher.remove_documents_by_path(&event.path)?;
+                
+                if removed_count > 0 {
+                    println!("🗑️ Removed {} documents for file: {:?}", removed_count, event.path);
+                } else {
+                    println!("ℹ️ No documents found to remove for file: {:?}", event.path);
+                }
             }
         }
+        
+        Ok(())
     }
 }

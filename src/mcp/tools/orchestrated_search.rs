@@ -14,7 +14,7 @@ use crate::mcp::{McpError, McpResult};
 use crate::mcp::protocol::JsonRpcResponse;
 use crate::mcp::types::{SearchMatch, SearchType};
 use crate::mcp::orchestrator::{SearchOrchestrator, OrchestratorConfig};
-BM25Searcher;
+use crate::search::BM25Searcher;
 
 /// Enhanced search parameters with orchestration features
 #[derive(Debug, Deserialize)]
@@ -268,10 +268,7 @@ mod tests {
             // Already initialized, that's ok
         }
         
-        let searcher = BM25Searcher::new(
-            temp_dir.path().to_path_buf(),
-            temp_dir.path().join("db")
-        ).await.unwrap();
+        let searcher = BM25Searcher::new();
         
         OrchestratedSearchTool::new(searcher, None).await.unwrap()
     }

@@ -7,7 +7,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use crate::mcp::{McpError, McpResult};
 use crate::mcp::protocol::JsonRpcResponse;
-use crate::search::BM25Searcher;
+use crate::search::{BM25Searcher, UnifiedSearchAdapter};
 
 pub mod index;
 pub mod search;
@@ -19,16 +19,18 @@ pub mod watcher;
 /// Tool registry for MCP server
 /// Provides centralized access to all tool implementations
 pub struct ToolRegistry {
-    searcher: Arc<RwLock<BM25Searcher>>,
+    searcher: Arc<RwLock<BM25Searcher>>, // Keep for backward compatibility
+    unified_adapter: Arc<UnifiedSearchAdapter>, // New unified search
     orchestrated_search_tool: Option<Arc<orchestrated_search::OrchestratedSearchTool>>,
     watcher_tool: Option<Arc<tokio::sync::Mutex<watcher::WatcherTool>>>,
 }
 
 impl ToolRegistry {
-    /// Create new tool registry with BM25Searcher instance
-    pub fn new(searcher: Arc<RwLock<BM25Searcher>>) -> Self {
+    /// Create new tool registry with unified search adapter
+    pub fn new(searcher: Arc<RwLock<BM25Searcher>>, unified_adapter: Arc<UnifiedSearchAdapter>) -> Self {
         Self { 
             searcher,
+            unified_adapter,
             orchestrated_search_tool: None,
             watcher_tool: None,
         }
@@ -57,18 +59,20 @@ impl ToolRegistry {
         self.searcher.clone()
     }
     
-    /// Execute index_directory tool
+    /// Execute index_directory tool with unified BM25 + embeddings  
     pub async fn execute_index_directory(&self, params: &serde_json::Value, id: Option<serde_json::Value>) -> McpResult<JsonRpcResponse> {
-        index::execute_index_directory(&self.searcher, params, id).await
+        // Use unified indexing (BM25 + embeddings when available)
+        index::execute_unified_index_directory(&self.unified_adapter, params, id).await
     }
     
-    /// Execute search tool with parallel backend execution
+    /// Execute search tool with unified BM25 + embeddings
     pub async fn execute_search(&self, params: &serde_json::Value, id: Option<serde_json::Value>) -> McpResult<JsonRpcResponse> {
-        // Use orchestrated search if available, otherwise fall back to basic search
+        // Use orchestrated search if available, otherwise use unified search
         if let Some(ref orchestrated_tool) = self.orchestrated_search_tool {
             orchestrated_tool.execute_search(params, id).await
         } else {
-            search::execute_search(&self.searcher, params, id).await
+            // Use unified search (BM25 + embeddings when available)
+            search::execute_unified_search(&self.unified_adapter, params, id).await
         }
     }
     

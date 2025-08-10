@@ -1,13 +1,12 @@
 use std::path::{Path, PathBuf};
-use std::sync::mpsc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime};
 use std::collections::HashMap;
 use anyhow::{Result, anyhow};
-use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::RecursiveMode;
 use notify_debouncer_mini::{new_debouncer, DebouncedEventKind};
-use crossbeam_channel::{Receiver, Sender, bounded, select};
+use crossbeam_channel::{Receiver, Sender, bounded};
 
 #[cfg(feature = "vectordb")]
 use std::sync::RwLock;
@@ -177,11 +176,21 @@ impl SimpleFileWatcher {
         }
 
         let timestamp = SystemTime::now();
+        
+        // DebouncedEventKind only has Any and AnyContinuous variants.
+        // Since we can't distinguish between create/modify/delete in debounced events,
+        // we treat all events as modifications and let the system handle file existence checks.
         let change = match event.kind {
-            DebouncedEventKind::Create => FileChange::Added(path.clone()),
-            DebouncedEventKind::Modify => FileChange::Modified(path.clone()),
-            DebouncedEventKind::Remove => FileChange::Deleted(path.clone()),
-            _ => return Ok(None), // Ignore other events
+            DebouncedEventKind::Any | DebouncedEventKind::AnyContinuous => {
+                // Check if file exists to distinguish between modify and delete
+                if path.exists() {
+                    FileChange::Modified(path.clone())
+                } else {
+                    FileChange::Deleted(path.clone())
+                }
+            }
+            // Handle any future variants added to DebouncedEventKind
+            _ => return Ok(None),
         };
 
         Ok(Some(FileEvent {

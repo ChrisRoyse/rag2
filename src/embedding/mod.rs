@@ -6,7 +6,14 @@ pub mod nomic;      // Main Nomic embedding implementation (ONLY ONE)
 pub mod cache;      // Embedding cache system
 
 // Re-export commonly used types (CLEANED UP)
+#[cfg(feature = "ml")]
 pub use nomic::{NomicEmbedder, EmbeddingConfig};
+
+#[cfg(not(feature = "ml"))]
+pub struct EmbeddingConfig;
+
+#[cfg(not(feature = "ml"))]
+pub struct NomicEmbedder;
 pub use cache::{EmbeddingCache, CacheEntry, CacheStats};
 
 // Common embedding traits and types

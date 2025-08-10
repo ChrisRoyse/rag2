@@ -230,14 +230,5 @@ impl From<crate::search::cache::SearchResult> for SearchMatch {
     }
 }
 
-impl From<crate::search::unified::IndexStats> for IndexStats {
-    fn from(stats: crate::search::unified::IndexStats) -> Self {
-        Self {
-            total_files: stats.files_indexed as u32,
-            total_chunks: stats.chunks_created as u32,
-            total_symbols: 0, // Not available in current IndexStats
-            index_size_bytes: 0, // Not available in current IndexStats
-            last_updated: chrono::Utc::now().to_rfc3339(),
-        }
-    }
-}
+// Note: Unified search module removed - IndexStats conversion disabled
+// TODO: Implement proper IndexStats conversion when unified search is available

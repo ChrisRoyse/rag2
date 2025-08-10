@@ -85,7 +85,7 @@ impl VectorStorage {
     /// Create a combined embedder-storage instance
     #[cfg(feature = "ml")]
     pub async fn with_embedder() -> Result<VectorStorageWithEmbedder, StorageError> {
-        use crate::embedding::simple_nomic::SimpleNomicEmbedder;
+        use crate::embedding::nomic::NomicEmbedder as SimpleNomicEmbedder;
         use std::path::PathBuf;
         
         // Default storage path
@@ -327,7 +327,7 @@ fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
 #[cfg(all(feature = "vectordb", feature = "ml"))]
 pub struct VectorStorageWithEmbedder {
     storage: VectorStorage,
-    embedder: Arc<crate::embedding::simple_nomic::SimpleNomicEmbedder>,
+    embedder: Arc<crate::embedding::nomic::NomicEmbedder>,
 }
 
 #[cfg(all(feature = "vectordb", feature = "ml"))]

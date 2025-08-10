@@ -100,8 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     // Create a simple BM25Searcher
     let db_path = project_path.join(".embed-search");
-    let searcher = embed_search::search::unified::BM25Searcher::new(project_path.clone(), db_path)
-        .await?;
+    let searcher = embed_search::search::BM25Searcher::new();
     
     // Create MCP server
     let _server = embed_search::mcp::McpServer::new(searcher, mcp_config)

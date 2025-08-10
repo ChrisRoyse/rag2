@@ -25,6 +25,28 @@ use byteorder::{LittleEndian, ReadBytesExt};
 #[cfg(feature = "ml")]
 static GLOBAL_EMBEDDER: OnceCell<Arc<NomicEmbedder>> = OnceCell::new();
 
+/// Configuration for Nomic embeddings
+#[derive(Debug, Clone)]
+#[cfg(feature = "ml")]
+pub struct EmbeddingConfig {
+    pub model_path: Option<PathBuf>,
+    pub cache_enabled: bool,
+    pub max_sequence_length: usize,
+    pub batch_size: usize,
+}
+
+#[cfg(feature = "ml")]
+impl Default for EmbeddingConfig {
+    fn default() -> Self {
+        Self {
+            model_path: None,
+            cache_enabled: true,
+            max_sequence_length: 2048,
+            batch_size: 32,
+        }
+    }
+}
+
 /// Simplified GGUF-based Nomic Embed model - token embeddings with L2 normalization only
 #[cfg(feature = "ml")]
 pub struct NomicEmbedder {

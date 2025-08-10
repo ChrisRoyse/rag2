@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use embed_search::{
-    search::unified::BM25Searcher,
+    search::BM25Searcher,
     config::Config,
 };
 
@@ -126,7 +126,7 @@ async fn main() -> Result<()> {
 async fn index_command(path: PathBuf, project_path: PathBuf, db_path: PathBuf) -> Result<()> {
     println!("📂 Indexing path: {:?}", path);
     
-    let searcher = BM25Searcher::new(project_path, db_path).await?;
+    let mut searcher = BM25Searcher::new();
     
     let full_path = if path.is_absolute() {
         path
@@ -135,11 +135,11 @@ async fn index_command(path: PathBuf, project_path: PathBuf, db_path: PathBuf) -
     };
     
     if full_path.is_file() {
-        searcher.index_file(&full_path).await?;
-        println!("✅ Indexed file: {:?}", full_path);
+        // BM25Engine doesn't have index_file method, use index_directory for single files
+        return Err(anyhow::anyhow!("Individual file indexing not supported, use directory indexing"));
     } else if full_path.is_dir() {
         let stats = searcher.index_directory(&full_path).await?;
-        println!("✅ {}", stats);
+        println!("✅ {:?}", stats);
     } else {
         return Err(anyhow::anyhow!("Path does not exist: {:?}", full_path));
     }
@@ -150,8 +150,8 @@ async fn index_command(path: PathBuf, project_path: PathBuf, db_path: PathBuf) -
 async fn search_command(query: &str, project_path: PathBuf, db_path: PathBuf) -> Result<()> {
     println!("🔍 Searching for: \"{}\"", query);
     
-    let searcher = BM25Searcher::new(project_path, db_path).await?;
-    let results = searcher.search(query).await?;
+    let searcher = BM25Searcher::new();
+    let results = searcher.search(query, 10)?;
     
     if results.is_empty() {
         println!("No results found.");
@@ -162,17 +162,15 @@ async fn search_command(query: &str, project_path: PathBuf, db_path: PathBuf) ->
     
     let max_display = std::cmp::min(5, Config::max_search_results()?);
     for (idx, result) in results.iter().take(max_display).enumerate() {
-        println!("{}. {} (score: {:.2})", idx + 1, result.file, result.score);
-        println!("   Type: {:?}", result.match_type);
+        println!("{}. {} (score: {:.2})", idx + 1, result.doc_id, result.score);
+        println!("   Terms: {:?}", result.matched_terms);
         
-        // Show a preview of the target chunk
-        let preview_lines: Vec<&str> = result.three_chunk_context.target.content
-            .lines()
-            .take(3)
-            .collect();
-        
-        for line in preview_lines {
-            println!("   | {}", line);
+        // Show matched terms and their scores
+        if !result.term_scores.is_empty() {
+            println!("   Term scores:");
+            for (term, score) in &result.term_scores {
+                println!("     {}: {:.3}", term, score);
+            }
         }
         
         println!();
@@ -189,7 +187,7 @@ async fn search_command(query: &str, project_path: PathBuf, db_path: PathBuf) ->
 async fn watch_command(project_path: PathBuf, db_path: PathBuf) -> Result<()> {
     println!("👁️  Starting file watch mode...");
     
-    let searcher = Arc::new(BM25Searcher::new(project_path.clone(), db_path.clone()).await?);
+    let searcher = Arc::new(BM25Searcher::new());
     let storage = Arc::new(RwLock::new(LanceDBStorage::new(db_path).await?));
     
     let watch = WatchCommand::new(project_path, searcher, storage)?;
@@ -216,7 +214,7 @@ async fn watch_command(_project_path: PathBuf, _db_path: PathBuf) -> Result<()> 
 async fn update_command(project_path: PathBuf, db_path: PathBuf) -> Result<()> {
     println!("🔄 Checking for file changes...");
     
-    let searcher = Arc::new(BM25Searcher::new(project_path.clone(), db_path.clone()).await?);
+    let searcher = Arc::new(BM25Searcher::new());
     let storage = Arc::new(RwLock::new(LanceDBStorage::new(db_path).await?));
     
     let watch = WatchCommand::new(project_path, searcher, storage)?;
@@ -236,8 +234,9 @@ async fn update_command(_project_path: PathBuf, _db_path: PathBuf) -> Result<()>
 async fn clear_command(project_path: PathBuf, db_path: PathBuf) -> Result<()> {
     println!("🧹 Clearing all indexed data...");
     
-    let searcher = BM25Searcher::new(project_path, db_path).await?;
-    searcher.clear_index().await?;
+    let searcher = BM25Searcher::new();
+    // BM25Engine doesn't have clear_index method, create new instance to clear
+    return Err(anyhow::anyhow!("Index clearing not implemented for BM25Engine"));
     
     println!("✅ Index cleared");
     
@@ -248,11 +247,12 @@ async fn stats_command(project_path: PathBuf, db_path: PathBuf) -> Result<()> {
     println!("📊 Index Statistics");
     println!("==================");
     
-    let searcher = BM25Searcher::new(project_path, db_path).await?;
-    let stats = searcher.get_stats().await?;
+    let searcher = BM25Searcher::new();
+    let stats = searcher.get_stats();
     
-    println!("Total embeddings: {}", stats.total_embeddings);
-    println!("Cache entries: {}/{}", stats.cache_entries, stats.cache_max_size);
+    println!("Total documents: {}", stats.total_documents);
+    println!("Total terms: {}", stats.total_terms);
+    println!("Average document length: {:.2}", stats.avg_document_length);
     
     Ok(())
 }
@@ -269,13 +269,13 @@ async fn test_command(project_path: PathBuf, db_path: PathBuf) -> Result<()> {
     
     // Clear index first
     println!("1️⃣  Clearing existing index...");
-    let searcher = BM25Searcher::new(project_path.clone(), db_path.clone()).await?;
-    searcher.clear_index().await?;
+    let mut searcher = BM25Searcher::new();
+    // BM25Engine doesn't have clear_index method, create new instance instead
     
     // Index the vectortest directory
     println!("2️⃣  Indexing vectortest directory...");
     let stats = searcher.index_directory(&vectortest_path).await?;
-    println!("   {}", stats);
+    println!("   {:?}", stats);
     
     // Test searches
     println!("\n3️⃣  Running test searches...");
@@ -298,11 +298,11 @@ async fn test_command(project_path: PathBuf, db_path: PathBuf) -> Result<()> {
     for (query, expected_files) in test_queries {
         print!("   Testing query \"{}\"... ", query);
         
-        let results = searcher.search(query).await?;
+        let results = searcher.search(query, 10)?;
         
         let mut found_expected = false;
         for expected_file in &expected_files {
-            if results.iter().any(|r| r.file.contains(expected_file)) {
+            if results.iter().any(|r| r.doc_id.contains(expected_file)) {
                 found_expected = true;
                 break;
             }

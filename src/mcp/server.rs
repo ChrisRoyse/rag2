@@ -12,13 +12,14 @@ use crate::mcp::{
         StatsCapabilities, ServerInfo, PerformanceStats,
     },
 };
-BM25Searcher;
+use crate::search::{BM25Searcher, UnifiedSearchAdapter};
 use crate::mcp::tools::ToolRegistry;
 
-/// MCP server implementation that integrates with BM25Searcher
+/// MCP server implementation with unified BM25 + embeddings search
 pub struct McpServer {
     config: McpConfig,
-    searcher: Arc<RwLock<BM25Searcher>>,
+    searcher: Arc<RwLock<BM25Searcher>>, // Keep for backward compatibility
+    unified_adapter: Arc<UnifiedSearchAdapter>, // New unified search
     tool_registry: ToolRegistry,
     protocol_handler: ProtocolHandler,
     start_time: Instant,
@@ -42,11 +43,13 @@ impl McpServer {
                 message: format!("MCP configuration validation failed: {}", e),
             })?;
         let searcher_arc = Arc::new(RwLock::new(searcher));
-        let tool_registry = ToolRegistry::new(searcher_arc.clone());
+        let unified_adapter = Arc::new(UnifiedSearchAdapter::new(searcher_arc.clone()));
+        let tool_registry = ToolRegistry::new(searcher_arc.clone(), unified_adapter.clone());
         
         Ok(Self {
             config,
             searcher: searcher_arc,
+            unified_adapter,
             tool_registry,
             protocol_handler: ProtocolHandler::new(),
             start_time: Instant::now(),
@@ -68,13 +71,75 @@ impl McpServer {
             })?;
         
         let db_path = project_path.join(".embed-search");
-        let searcher = BM25Searcher::new(project_path, db_path)
-            .await
-            .map_err(|e| McpError::InternalError {
-                message: format!("Failed to create BM25Searcher: {}", e),
-            })?;
+        let searcher = BM25Searcher::new();
 
-        Self::new(searcher, mcp_config).await
+        // Try to initialize with embeddings if features are available
+        Self::new_with_embeddings(searcher, mcp_config, db_path).await
+    }
+    
+    /// Create MCP server with embeddings support when features available
+    pub async fn new_with_embeddings(
+        searcher: BM25Searcher,
+        config: McpConfig,
+        db_path: PathBuf,
+    ) -> McpResult<Self> {
+        // Validate the configuration first
+        config.validate()
+            .map_err(|e| McpError::ConfigError {
+                message: format!("MCP configuration validation failed: {}", e),
+            })?;
+        let searcher_arc = Arc::new(RwLock::new(searcher));
+        
+        // Try to initialize unified adapter with embeddings
+        #[cfg(all(feature = "ml", feature = "vectordb"))]
+        {
+            match UnifiedSearchAdapter::with_embeddings(searcher_arc.clone(), db_path).await {
+                Ok(unified_adapter) => {
+                    println!("✅ MCP Server: Initialized with BM25 + Semantic embeddings");
+                    let unified_adapter = Arc::new(unified_adapter);
+                    let tool_registry = ToolRegistry::new(searcher_arc.clone(), unified_adapter.clone());
+                    
+                    return Ok(Self {
+                        config,
+                        searcher: searcher_arc,
+                        unified_adapter,
+                        tool_registry,
+                        protocol_handler: ProtocolHandler::new(),
+                        start_time: Instant::now(),
+                        request_count: Arc::new(tokio::sync::Mutex::new(0)),
+                        error_count: Arc::new(tokio::sync::Mutex::new(0)),
+                        total_search_time: Arc::new(tokio::sync::Mutex::new(0)),
+                        total_index_time: Arc::new(tokio::sync::Mutex::new(0)),
+                        total_searches: Arc::new(tokio::sync::Mutex::new(0)),
+                        total_indexes: Arc::new(tokio::sync::Mutex::new(0)),
+                    });
+                }
+                Err(e) => {
+                    println!("⚠️  MCP Server: Failed to initialize embeddings: {}", e);
+                    println!("    Falling back to BM25-only mode");
+                }
+            }
+        }
+        
+        // Fallback: Initialize without embeddings
+        println!("ℹ️  MCP Server: Initialized with BM25 only (embeddings features disabled)");
+        let unified_adapter = Arc::new(UnifiedSearchAdapter::new(searcher_arc.clone()));
+        let tool_registry = ToolRegistry::new(searcher_arc.clone(), unified_adapter.clone());
+        
+        Ok(Self {
+            config,
+            searcher: searcher_arc,
+            unified_adapter,
+            tool_registry,
+            protocol_handler: ProtocolHandler::new(),
+            start_time: Instant::now(),
+            request_count: Arc::new(tokio::sync::Mutex::new(0)),
+            error_count: Arc::new(tokio::sync::Mutex::new(0)),
+            total_search_time: Arc::new(tokio::sync::Mutex::new(0)),
+            total_index_time: Arc::new(tokio::sync::Mutex::new(0)),
+            total_searches: Arc::new(tokio::sync::Mutex::new(0)),
+            total_indexes: Arc::new(tokio::sync::Mutex::new(0)),
+        })
     }
     
     /// Create MCP server with explicit MCP configuration file
@@ -88,13 +153,9 @@ impl McpServer {
             })?;
         
         let db_path = project_path.join(".embed-search");
-        let searcher = BM25Searcher::new(project_path, db_path)
-            .await
-            .map_err(|e| McpError::InternalError {
-                message: format!("Failed to create BM25Searcher: {}", e),
-            })?;
+        let searcher = BM25Searcher::new();
 
-        Self::new(searcher, mcp_config).await
+        Self::new_with_embeddings(searcher, mcp_config, db_path).await
     }
 
     /// Process incoming JSON-RPC request

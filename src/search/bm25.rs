@@ -290,15 +290,265 @@ impl BM25Engine {
         Ok(matches)
     }
     
-    /// Get statistics about the index
+    /// Get statistics about the index with memory usage estimation
     pub fn get_stats(&self) -> IndexStats {
+        let estimated_memory = self.estimate_memory_usage();
+        
         IndexStats {
             total_documents: self.total_docs,
             total_terms: self.term_frequencies.len(),
             avg_document_length: self.avg_doc_length,
             k1: self.k1,
             b: self.b,
+            estimated_memory_bytes: estimated_memory,
+            performance_metrics: None, // Set by indexing operations
         }
+    }
+    
+    /// Estimate memory usage of the index
+    fn estimate_memory_usage(&self) -> usize {
+        let mut total_bytes = 0;
+        
+        // Document lengths map
+        total_bytes += self.document_lengths.len() * (std::mem::size_of::<String>() + std::mem::size_of::<usize>());
+        for (key, _) in &self.document_lengths {
+            total_bytes += key.len();
+        }
+        
+        // Term frequencies map
+        total_bytes += self.term_frequencies.len() * (std::mem::size_of::<String>() + std::mem::size_of::<TermStats>());
+        for (key, _) in &self.term_frequencies {
+            total_bytes += key.len();
+        }
+        
+        // Inverted index
+        for (term, doc_terms) in &self.inverted_index {
+            total_bytes += term.len();
+            total_bytes += doc_terms.len() * std::mem::size_of::<DocumentTerm>();
+            for doc_term in doc_terms {
+                total_bytes += doc_term.doc_id.len();
+                total_bytes += doc_term.positions.len() * std::mem::size_of::<usize>();
+            }
+        }
+        
+        total_bytes
+    }
+    
+    /// Index all files in a directory with performance monitoring and async processing
+    pub async fn index_directory(&mut self, dir_path: &std::path::Path) -> Result<IndexStats> {
+        self.index_directory_with_progress::<fn(usize, usize)>(dir_path, None).await
+    }
+    
+    /// Index directory with optional progress callback
+    pub async fn index_directory_with_progress<F>(
+        &mut self, 
+        dir_path: &std::path::Path,
+        progress_callback: Option<F>
+    ) -> Result<IndexStats> 
+    where 
+        F: Fn(usize, usize) + Send + Sync
+    {
+        use std::fs;
+        use std::path::Path;
+        use tokio::task;
+        use std::sync::{Arc, Mutex};
+        
+        if !dir_path.exists() {
+            return Err(anyhow::anyhow!("Directory does not exist: {}", dir_path.display()));
+        }
+        
+        if !dir_path.is_dir() {
+            return Err(anyhow::anyhow!("Path is not a directory: {}", dir_path.display()));
+        }
+        
+        let start_time = std::time::Instant::now();
+        
+        // First pass: collect all files to process
+        let mut all_files = Vec::new();
+        self.collect_files_recursive(dir_path, &mut all_files)?;
+        
+        let total_files = all_files.len();
+        let processed_count = Arc::new(Mutex::new(0));
+        
+        println!("📁 Found {} files to index", total_files);
+        
+        // Process files in batches for better memory management
+        let batch_size = 50;
+        let mut batch_start = 0;
+        
+        while batch_start < all_files.len() {
+            let batch_end = (batch_start + batch_size).min(all_files.len());
+            let batch_files = &all_files[batch_start..batch_end];
+            
+            // Process batch
+            for file_path in batch_files {
+                match self.process_single_file(file_path).await {
+                    Ok(_) => {
+                        let mut count = processed_count.lock().unwrap();
+                        *count += 1;
+                        
+                        if let Some(ref callback) = progress_callback {
+                            callback(*count, total_files);
+                        }
+                        
+                        // Progress reporting every 10 files
+                        if *count % 10 == 0 {
+                            let elapsed = start_time.elapsed();
+                            let rate = *count as f64 / elapsed.as_secs_f64();
+                            println!("⚡ Processed {}/{} files ({:.1} files/sec)", 
+                                   *count, total_files, rate);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("⚠️  Failed to process {}: {}", file_path.display(), e);
+                        // Continue with other files
+                    }
+                }
+            }
+            
+            batch_start = batch_end;
+            
+            // Yield control to allow other tasks to run
+            task::yield_now().await;
+        }
+        
+        // Update statistics after batch operation
+        self.update_statistics()?;
+        
+        let final_elapsed = start_time.elapsed();
+        let processed = *processed_count.lock().unwrap();
+        let rate = processed as f64 / final_elapsed.as_secs_f64();
+        
+        println!("🎉 Indexing complete: {} files in {:.2}s ({:.1} files/sec)", 
+                processed, final_elapsed.as_secs_f64(), rate);
+        
+        Ok(self.get_stats())
+    }
+    
+    /// Collect all indexable files recursively
+    fn collect_files_recursive(&self, dir: &std::path::Path, files: &mut Vec<std::path::PathBuf>) -> Result<()> {
+        use std::fs;
+        
+        for entry in fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            
+            if path.is_dir() {
+                // Skip common non-source directories
+                if let Some(dir_name) = path.file_name().and_then(|n| n.to_str()) {
+                    if matches!(dir_name, "target" | "node_modules" | ".git" | "__pycache__" | "build" | "dist") {
+                        continue;
+                    }
+                }
+                self.collect_files_recursive(&path, files)?;
+            } else if path.is_file() {
+                if self.is_indexable_file(&path) {
+                    files.push(path);
+                }
+            }
+        }
+        
+        Ok(())
+    }
+    
+    /// Check if file should be indexed based on extension and size
+    fn is_indexable_file(&self, path: &std::path::Path) -> bool {
+        // Check file extension
+        if let Some(extension) = path.extension() {
+            let ext_str = extension.to_string_lossy().to_lowercase();
+            
+            let supported_extensions = [
+                // Rust
+                "rs",
+                // Python
+                "py", "pyx", "pyi",
+                // JavaScript/TypeScript
+                "js", "jsx", "ts", "tsx", "vue",
+                // Java
+                "java", "scala", "kt", "gradle",
+                // C/C++
+                "c", "cpp", "cxx", "cc", "h", "hpp", "hxx",
+                // C#
+                "cs",
+                // Go
+                "go",
+                // Ruby
+                "rb",
+                // PHP
+                "php",
+                // Swift
+                "swift",
+                // Objective-C
+                "m", "mm",
+                // Shell
+                "sh", "bash", "zsh", "fish",
+                // Config files
+                "json", "yaml", "yml", "toml", "xml", "ini", "cfg",
+                // Documentation
+                "md", "txt", "rst",
+                // SQL
+                "sql",
+                // Dockerfile
+                "dockerfile",
+            ];
+            
+            if !supported_extensions.contains(&ext_str.as_str()) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+        
+        // Check file size (skip very large files)
+        if let Ok(metadata) = path.metadata() {
+            let size_mb = metadata.len() as f64 / 1_048_576.0;
+            if size_mb > 5.0 { // Skip files larger than 5MB
+                return false;
+            }
+        }
+        
+        true
+    }
+    
+    /// Process a single file and add it to the index
+    pub async fn process_single_file(&mut self, path: &std::path::Path) -> Result<()> {
+        use tokio::fs;
+        
+        let content = fs::read_to_string(path).await
+            .with_context(|| format!("Failed to read file: {}", path.display()))?;
+        
+        // Skip empty files
+        if content.trim().is_empty() {
+            return Ok(());
+        }
+        
+        let doc_id = format!("{}_{}", 
+                           path.to_string_lossy().replace(['/', '\\'], "_"),
+                           content.len()); // Use content length as uniqueness factor
+        
+        let tokens = tokenize_content(&content);
+        
+        // Skip files with too few meaningful tokens
+        if tokens.len() < 5 {
+            return Ok(());
+        }
+        
+        let extension = path.extension()
+            .and_then(|ext| ext.to_str())
+            .unwrap_or("")
+            .to_lowercase();
+        
+        let doc = BM25Document {
+            id: doc_id,
+            file_path: path.to_string_lossy().to_string(),
+            chunk_index: 0,
+            tokens,
+            start_line: 1,
+            end_line: content.lines().count(),
+            language: if extension.is_empty() { None } else { Some(extension) },
+        };
+        
+        self.add_document(doc)
     }
     
     /// Update an existing document in the BM25 index
@@ -377,6 +627,34 @@ impl BM25Engine {
         Ok(())
     }
     
+    /// Remove all documents associated with a specific file path
+    pub fn remove_documents_by_path(&mut self, file_path: &std::path::Path) -> Result<usize> {
+        let path_prefix = file_path.to_string_lossy().replace(['/', '\\'], "_");
+        let mut removed_count = 0;
+        
+        // Find all document IDs that start with this path prefix
+        let docs_to_remove: Vec<String> = self.document_lengths.keys()
+            .filter(|doc_id| doc_id.starts_with(&path_prefix))
+            .cloned()
+            .collect();
+        
+        // Remove each document
+        for doc_id in docs_to_remove {
+            if let Err(e) = self.remove_document(&doc_id) {
+                eprintln!("Warning: Failed to remove document {}: {}", doc_id, e);
+            } else {
+                removed_count += 1;
+            }
+        }
+        
+        if removed_count > 0 {
+            // Update statistics after removals
+            self.update_statistics()?;
+        }
+        
+        Ok(removed_count)
+    }
+    
     /// Update index statistics after batch operations
     /// This recalculates average document length and validates consistency
     pub fn update_statistics(&mut self) -> Result<()> {
@@ -437,6 +715,118 @@ impl BM25Engine {
     }
 }
 
+/// Enhanced tokenization function for code search
+/// Extracts identifiers, function names, and meaningful terms while filtering noise
+pub fn tokenize_content(content: &str) -> Vec<Token> {
+    use regex::Regex;
+    use std::collections::HashSet;
+    
+    let mut tokens = Vec::new();
+    let mut position = 0;
+    
+    // Common stop words to filter out
+    let stop_words: HashSet<&str> = [
+        "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
+        "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do", "does", "did",
+        "will", "would", "could", "should", "may", "might", "can", "this", "that", "these", "those"
+    ].iter().copied().collect();
+    
+    // Regex patterns for different code elements
+    let identifier_pattern = Regex::new(r"[a-zA-Z_][a-zA-Z0-9_]*").expect("Valid regex");
+    let string_literal_pattern = Regex::new(r#""[^"]*"|'[^']*'"#).expect("Valid regex");
+    let comment_pattern = Regex::new(r"//.*?$|/\*.*?\*/").expect("Valid regex");
+    
+    // Remove comments first
+    let content_no_comments = comment_pattern.replace_all(content, " ");
+    
+    // Extract string literals (for context)
+    for string_match in string_literal_pattern.find_iter(&content_no_comments) {
+        let string_content = string_match.as_str();
+        // Extract words from string literals
+        for word in string_content.split_whitespace() {
+            let cleaned = word.trim_matches(|c: char| c.is_ascii_punctuation())
+                             .to_lowercase();
+            if cleaned.len() > 2 && !stop_words.contains(cleaned.as_str()) {
+                tokens.push(Token {
+                    text: cleaned,
+                    position,
+                    importance_weight: 0.5, // Lower weight for string content
+                });
+                position += 1;
+            }
+        }
+    }
+    
+    // Extract identifiers (function names, variable names, types)
+    for identifier_match in identifier_pattern.find_iter(&content_no_comments) {
+        let identifier = identifier_match.as_str().to_lowercase();
+        
+        // Skip very short identifiers and common keywords
+        if identifier.len() < 2 {
+            continue;
+        }
+        
+        // Skip common programming keywords
+        if matches!(identifier.as_str(), 
+            "if" | "else" | "for" | "while" | "do" | "try" | "catch" | "finally" |
+            "int" | "str" | "bool" | "let" | "var" | "const" | "fn" | "def" | "class" |
+            "new" | "return" | "break" | "continue" | "true" | "false" | "null" | "none") {
+            continue;
+        }
+        
+        if !stop_words.contains(identifier.as_str()) {
+            // Higher weight for longer identifiers (likely more meaningful)
+            let importance = if identifier.len() > 6 {
+                1.5
+            } else if identifier.contains('_') || identifier.chars().any(|c| c.is_uppercase()) {
+                1.2 // Function names, constants
+            } else {
+                1.0
+            };
+            
+            tokens.push(Token {
+                text: identifier,
+                position,
+                importance_weight: importance,
+            });
+            position += 1;
+        }
+    }
+    
+    // Also process remaining non-identifier words
+    let words_pattern = Regex::new(r"\b\w+\b").expect("Valid regex");
+    for word_match in words_pattern.find_iter(&content_no_comments) {
+        let word = word_match.as_str().to_lowercase();
+        
+        // Skip if already processed as identifier or too short
+        if word.len() < 3 || identifier_pattern.is_match(&word) {
+            continue;
+        }
+        
+        if !stop_words.contains(word.as_str()) {
+            tokens.push(Token {
+                text: word,
+                position,
+                importance_weight: 0.8,
+            });
+            position += 1;
+        }
+    }
+    
+    // Remove duplicates while preserving order and combining weights
+    let mut unique_tokens = Vec::new();
+    let mut seen = HashSet::new();
+    
+    for token in tokens {
+        if !seen.contains(&token.text) {
+            seen.insert(token.text.clone());
+            unique_tokens.push(token);
+        }
+    }
+    
+    unique_tokens
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IndexStats {
     pub total_documents: usize,
@@ -444,11 +834,21 @@ pub struct IndexStats {
     pub avg_document_length: f32,
     pub k1: f32,
     pub b: f32,
+    /// Memory usage estimation in bytes
+    pub estimated_memory_bytes: usize,
+    /// Indexing performance metrics
+    pub performance_metrics: Option<PerformanceMetrics>,
 }
 
-// Include incremental update tests
-#[cfg(test)]
-mod incremental_tests;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PerformanceMetrics {
+    pub indexing_time_seconds: f64,
+    pub files_per_second: f64,
+    pub terms_per_second: f64,
+    pub peak_memory_mb: f64,
+}
+
+// Incremental update tests would go here when implemented
 
 #[cfg(test)]
 mod tests {

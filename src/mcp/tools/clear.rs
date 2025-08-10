@@ -94,11 +94,8 @@ pub async fn execute_clear_index(
 async fn clear_all_indexes(searcher: &Arc<RwLock<BM25Searcher>>) -> McpResult<u32> {
     println!("🧹 Clearing all indexes and caches...");
     
-    let searcher_guard = searcher.read().await;
-    searcher_guard.clear_index().await
-        .map_err(|e| McpError::InternalError {
-            message: format!("Failed to clear all indexes: {}", e)
-        })?;
+    let mut searcher_guard = searcher.write().await;
+    searcher_guard.clear();
     drop(searcher_guard);
     
     // Return estimated items removed - would need proper tracking in production

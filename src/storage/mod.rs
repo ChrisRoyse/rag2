@@ -5,9 +5,25 @@
 pub mod safe_vectordb;       // Thread-safe main vector storage
 pub mod simple_vectordb;     // Simple fallback storage
 
+// NEW: Real LanceDB implementation for production vector storage
+#[cfg(feature = "vectordb")]
+pub mod lancedb_storage;     // Production LanceDB vector storage
+
 // Re-export commonly used types (CLEANED UP)
 pub use safe_vectordb::{VectorStorage, StorageConfig};
 pub use simple_vectordb::{StorageError, EmbeddingRecord, VectorSchema};
+
+#[cfg(feature = "vectordb")]
+pub use lancedb_storage::{LanceDBStorage, LanceDBConfig, LanceDBRecord, LanceDBError, LanceDBStats};
+
+// NEW: Integrated Nomic + LanceDB system for production use
+#[cfg(all(feature = "vectordb", feature = "ml"))]
+pub mod nomic_lancedb_integration;
+
+#[cfg(all(feature = "vectordb", feature = "ml"))]
+pub use nomic_lancedb_integration::{
+    NomicLanceDBSystem, SystemConfig, SystemStats, create_nomic_lancedb_system
+};
 
 // Common storage traits and types
 use serde::{Deserialize, Serialize};

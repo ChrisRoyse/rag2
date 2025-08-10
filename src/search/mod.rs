@@ -17,6 +17,7 @@ pub mod inverted_index;    // ✅ Inverted index data structure
 pub mod cache;             // ✅ Search result caching
 pub mod config;            // ✅ Search configuration
 pub mod symbol_index;      // ✅ Symbol indexing for code search
+pub mod search_adapter;    // ✅ Search trait adapter
 #[cfg(feature = "tantivy")]
 pub mod tantivy_search;    // ✅ Tantivy full-text search (ONLY ONE)
 
@@ -28,5 +29,6 @@ pub use inverted_index::{InvertedIndex, DocumentMetadata};
 pub use config::SearchConfig;
 // REMOVED: pub use symbol_index::{SymbolIndex, SymbolInfo}; // tree-sitter dependencies missing
 pub use cache::SearchResult;
+pub use search_adapter::{UnifiedSearchAdapter, UnifiedMatch, SearchStats};
 #[cfg(feature = "tantivy")]
 pub use tantivy_search::TantivySearcher;

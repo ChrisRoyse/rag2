@@ -243,7 +243,7 @@ impl SearchOrchestrator {
         let searcher = self.searcher.read().await;
         let search_start = Instant::now();
         
-        let results = match searcher.search(query).await {
+        let bm25_results = match searcher.search(query, 50) {
             Ok(results) => results,
             Err(e) => {
                 // Try to extract which backend failed from error message
@@ -282,6 +282,33 @@ impl SearchOrchestrator {
             }
         };
         
+        // Convert BM25Match results to SearchResult format
+        let results: Vec<crate::search::cache::SearchResult> = bm25_results
+            .into_iter()
+            .map(|bm25_match| {
+                // Create a simple ChunkContext for the match
+                let chunk_context = crate::chunking::ChunkContext {
+                    above: None,
+                    target: crate::chunking::Chunk {
+                        content: format!("BM25 result (score: {:.3}): {}", 
+                                       bm25_match.score, 
+                                       bm25_match.matched_terms.join(", ")),
+                        start_line: 1,
+                        end_line: 1,
+                    },
+                    below: None,
+                    target_index: 0,
+                };
+                
+                crate::search::cache::SearchResult::new(
+                    bm25_match.doc_id,
+                    chunk_context,
+                    bm25_match.score,
+                    crate::search::cache::MatchType::Fuzzy, // BM25 is statistical but we'll map to Fuzzy
+                )
+            })
+            .collect();
+
         let search_latency = search_start.elapsed();
         backend_latencies.insert("unified_search".to_string(), search_latency);
         
@@ -459,10 +486,7 @@ mod tests {
             // Already initialized, that's ok
         }
         
-        let searcher = BM25Searcher::new(
-            temp_dir.path().to_path_buf(),
-            temp_dir.path().join("db")
-        ).await.unwrap();
+        let searcher = BM25Searcher::new();
         
         SearchOrchestrator::new(searcher, None).await.unwrap()
     }
@@ -530,10 +554,7 @@ mod tests {
             // Already initialized
         }
         
-        let searcher = BM25Searcher::new(
-            temp_dir.path().to_path_buf(),
-            temp_dir.path().join("db")
-        ).await.unwrap();
+        let searcher = BM25Searcher::new();
         
         let orchestrator = SearchOrchestrator::new(searcher, Some(config)).await.unwrap();
         

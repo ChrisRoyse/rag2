@@ -7,7 +7,7 @@ use crate::mcp::{
     protocol::JsonRpcResponse,
     watcher::{McpWatcher, EventFilter},
 };
-BM25Searcher;
+use crate::search::BM25Searcher;
 
 /// MCP tool handler for watcher-related operations
 pub struct WatcherTool {
@@ -208,7 +208,6 @@ impl WatcherTool {
 mod tests {
     use super::*;
     use tempfile::TempDir;
-    BM25Searcher;
 
     #[tokio::test]
     async fn test_watcher_tool_lifecycle() {
@@ -220,9 +219,7 @@ mod tests {
         }
 
         let searcher = Arc::new(RwLock::new(
-            BM25Searcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
-                .await
-                .unwrap()
+            BM25Searcher::new()
         ));
 
         let mut tool = WatcherTool::new(searcher);
@@ -255,9 +252,7 @@ mod tests {
         }
 
         let searcher = Arc::new(RwLock::new(
-            BM25Searcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
-                .await
-                .unwrap()
+            BM25Searcher::new()
         ));
 
         let mut tool = WatcherTool::new(searcher);
@@ -292,9 +287,7 @@ mod tests {
         }
 
         let searcher = Arc::new(RwLock::new(
-            BM25Searcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
-                .await
-                .unwrap()
+            BM25Searcher::new()
         ));
 
         let mut tool = WatcherTool::new(searcher);

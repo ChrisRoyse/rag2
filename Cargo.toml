@@ -22,11 +22,12 @@ hf-hub = { version = "0.3", features = ["tokio"], optional = true }
 byteorder = { version = "1.5", optional = true }
 rand = { version = "0.8", optional = true }
 
-# Real LanceDB dependencies - as required by user
-lancedb = { version = "0.21", optional = true }
-arrow = { version = "53", optional = true }
-arrow-array = { version = "53", optional = true }
-arrow-schema = { version = "53", optional = true }
+# Real LanceDB dependencies - use exact versions to avoid conflicts
+# LanceDB 0.20 requires Arrow 55.1+ (confirmed from workspace Cargo.toml)
+lancedb = { version = "0.20", optional = true }
+arrow = { version = "55.1", optional = true }
+arrow-array = { version = "55.1", optional = true }
+arrow-schema = { version = "55.1", optional = true }
 
 # Lightweight storage fallback
 bincode = "1.3"
@@ -71,7 +72,7 @@ rayon = "1.7"
 walkdir = "2.4"
 
 # Add back tantivy for working fuzzy search (use older stable version to avoid zstd issues)
-tantivy = { version = "0.20", optional = true }
+tantivy = { version = "0.19", optional = true }
 
 # Retry logic with exponential backoff
 backoff = "0.4"
@@ -119,19 +120,6 @@ name = "verify_mcp_config"
 path = "src/bin/verify_mcp_config.rs"
 required-features = ["mcp"]
 
-[[bin]]
-name = "minimal_mvp_demo"
-path = "src/bin/minimal_mvp_demo.rs"
-
-[[bin]]
-name = "test_nomic_integration"
-path = "src/bin/test_nomic_integration.rs"
-required-features = ["sled-storage", "ml"]
-
-[[bin]]
-name = "test_real_lancedb_integration"
-path = "src/bin/test_real_lancedb_integration.rs"
-required-features = ["vectordb", "ml"]
 
 [[example]]
 name = "nomic_simple_demo"

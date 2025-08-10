@@ -7,7 +7,7 @@ use std::time::Duration;
 use tokio::sync::mpsc;
 use anyhow::Result;
 
-BM25Searcher;
+use crate::search::BM25Searcher;
 use super::events::{FileEvent, EventType};
 use super::updater::IndexUpdater;
 use super::edge_cases::EdgeCaseHandler;

@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use anyhow::{Result, anyhow, Context};
 use tantivy::schema::{Schema, Field, TEXT, STORED, Value};
-use tantivy::{Index, doc, Term, TantivyDocument, IndexSettings};
+use tantivy::{Index, doc, Term, Document, IndexSettings};
 use tantivy::query::{QueryParser, FuzzyTermQuery};
 use tantivy::collector::TopDocs;
 use tantivy::directory::MmapDirectory;
@@ -159,12 +159,12 @@ impl TantivySearcher {
         let directory = MmapDirectory::open(index_path)
             .with_context(|| format!("Failed to open directory for new index: {:?}", index_path))?;
             
-        // Create fully explicit IndexSettings - no fallbacks or defaults allowed
-        // All settings must be explicitly configured
+        // Create IndexSettings compatible with tantivy 0.19
         let index_settings = IndexSettings {
-            docstore_compression: tantivy::store::Compressor::Lz4,  // Explicit compression choice
-            docstore_blocksize: 16384,  // Explicit block size - no default masking
-            docstore_compress_dedicated_thread: true,  // Required field
+            docstore_compression: tantivy::store::Compressor::Lz4,
+            docstore_blocksize: 16384,
+            docstore_compress_dedicated_thread: true,
+            sort_by_field: None,  // No sorting needed
         };
         
         let index = Index::create(directory, schema, index_settings)
@@ -188,7 +188,7 @@ impl TantivySearcher {
         for field_name in &required_field_names {
             // Check if field exists in both schemas
             match (expected_schema.get_field(field_name), index_schema.get_field(field_name)) {
-                (Ok(_expected_field), Ok(_index_field)) => {
+                (Some(_expected_field), Some(_index_field)) => {
                     // For now, just check existence. More detailed type checking could be added later.
                     continue;
                 }
@@ -211,7 +211,7 @@ impl TantivySearcher {
     }
     
     pub async fn index_directory(&mut self, path: &Path) -> Result<()> {
-        let mut writer: tantivy::IndexWriter<TantivyDocument> = self.index.writer(15_000_000)?;
+        let mut writer = self.index.writer(15_000_000)?;
         
         // Walk directory and index files line by line
         for entry_result in WalkDir::new(path)
@@ -288,13 +288,13 @@ impl TantivySearcher {
         
         for (_score, doc_address) in top_docs {
             // Retrieve the actual document from Tantivy
-            let doc: TantivyDocument = searcher.doc(doc_address)?;
+            let doc: Document = searcher.doc(doc_address)?;
             
             // Extract real field values from the document
             let file_path = doc.get_first(self.file_path_field)
                 .ok_or_else(|| anyhow!("Missing file_path field"))?
-                .as_str()
-                .ok_or_else(|| anyhow!("file_path field is not string"))?
+                .as_text()
+                .ok_or_else(|| anyhow!("file_path field is not text"))?
                 .to_string();
             
             // Skip files outside project root if project scoping is enabled
@@ -307,21 +307,21 @@ impl TantivySearcher {
                 
             let line_number: usize = doc.get_first(self.line_number_field)
                 .ok_or_else(|| anyhow!("Missing line_number field"))?
-                .as_str()
-                .ok_or_else(|| anyhow!("line_number field is not string"))?
+                .as_text()
+                .ok_or_else(|| anyhow!("line_number field is not text"))?
                 .parse()
                 .map_err(|e| anyhow!("Failed to parse line_number: {}", e))?;
                 
             let content = doc.get_first(self.content_field)
                 .ok_or_else(|| anyhow!("Missing content field"))?
-                .as_str()
-                .ok_or_else(|| anyhow!("content field is not string"))?
+                .as_text()
+                .ok_or_else(|| anyhow!("content field is not text"))?
                 .to_string();
                 
             let line_content = doc.get_first(self.line_content_field)
                 .ok_or_else(|| anyhow!("Missing line_content field"))?
-                .as_str()
-                .ok_or_else(|| anyhow!("line_content field is not string"))?
+                .as_text()
+                .ok_or_else(|| anyhow!("line_content field is not text"))?
                 .to_string();
             
             matches.push(ExactMatch {
@@ -501,13 +501,13 @@ impl TantivySearcher {
         
         for (_score, doc_address) in top_docs {
             // Retrieve the actual document from Tantivy
-            let doc: TantivyDocument = searcher.doc(doc_address)?;
+            let doc: Document = searcher.doc(doc_address)?;
             
             // Extract real field values from the document
             let file_path = doc.get_first(self.file_path_field)
                 .ok_or_else(|| anyhow!("Missing file_path field"))?
-                .as_str()
-                .ok_or_else(|| anyhow!("file_path field is not string"))?
+                .as_text()
+                .ok_or_else(|| anyhow!("file_path field is not text"))?
                 .to_string();
             
             // Skip files outside project root if project scoping is enabled
@@ -520,21 +520,21 @@ impl TantivySearcher {
                 
             let line_number: usize = doc.get_first(self.line_number_field)
                 .ok_or_else(|| anyhow!("Missing line_number field"))?
-                .as_str()
-                .ok_or_else(|| anyhow!("line_number field is not string"))?
+                .as_text()
+                .ok_or_else(|| anyhow!("line_number field is not text"))?
                 .parse()
                 .map_err(|e| anyhow!("Failed to parse line_number: {}", e))?;
                 
             let content = doc.get_first(self.content_field)
                 .ok_or_else(|| anyhow!("Missing content field"))?
-                .as_str()
-                .ok_or_else(|| anyhow!("content field is not string"))?
+                .as_text()
+                .ok_or_else(|| anyhow!("content field is not text"))?
                 .to_string();
                 
             let line_content = doc.get_first(self.line_content_field)
                 .ok_or_else(|| anyhow!("Missing line_content field"))?
-                .as_str()
-                .ok_or_else(|| anyhow!("line_content field is not string"))?
+                .as_text()
+                .ok_or_else(|| anyhow!("line_content field is not text"))?
                 .to_string();
             
             matches.push(ExactMatch {
@@ -549,7 +549,7 @@ impl TantivySearcher {
     }
     
     pub async fn index_file(&mut self, file_path: &Path) -> Result<()> {
-        let mut writer: tantivy::IndexWriter<TantivyDocument> = self.index.writer(15_000_000)?;
+        let mut writer = self.index.writer(15_000_000)?;
         
         // Skip if not a code file
         if !self.is_code_file(file_path) {
@@ -607,7 +607,7 @@ impl TantivySearcher {
     
     /// Remove all entries for a document (file) from the Tantivy index
     pub async fn remove_document(&mut self, file_path: &Path) -> Result<()> {
-        let mut writer: tantivy::IndexWriter<TantivyDocument> = self.index.writer(15_000_000)?;
+        let mut writer = self.index.writer(15_000_000)?;
         
         // Create a term to match all documents from this file
         let file_path_str = file_path.to_string_lossy();
@@ -642,7 +642,7 @@ impl TantivySearcher {
                 .with_context(|| format!("Failed to rebuild index at {:?}", index_path))?;
         } else {
             // For in-memory storage, delete all documents
-            let mut writer: tantivy::IndexWriter<TantivyDocument> = self.index.writer(15_000_000)?;
+            let mut writer = self.index.writer(15_000_000)?;
             writer.delete_all_documents()?;
             writer.commit()?;
             

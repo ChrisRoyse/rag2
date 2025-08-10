@@ -6,7 +6,7 @@ use std::sync::{Arc as StdArc, RwLock as StdRwLock};
 use serde::{Serialize, Deserialize};
 
 use crate::watcher::{GitWatcher, FileEvent, EventType};
-BM25Searcher;
+use crate::search::BM25Searcher;
 use crate::mcp::error::{McpError, McpResult};
 
 /// MCP-specific watcher event that includes additional metadata for clients
@@ -83,11 +83,7 @@ impl McpWatcher {
         // This is not ideal but necessary due to the RwLock type mismatch
         let searcher_for_git_watcher = {
             let db_path = repo_path.join(".embed-git-watcher");
-            let new_searcher = BM25Searcher::new(repo_path.clone(), db_path)
-                .await
-                .map_err(|e| McpError::InternalError {
-                    message: format!("Failed to create searcher for GitWatcher: {}", e),
-                })?;
+            let new_searcher = BM25Searcher::new();
             Arc::new(std::sync::RwLock::new(new_searcher))
         };
         
@@ -313,7 +309,7 @@ impl McpWatcher {
 
         // Trigger actual index update through BM25Searcher
         let result = {
-            let searcher = self.searcher.write().await;
+            let mut searcher = self.searcher.write().await;
             searcher.index_directory(&self.watched_path).await
         };
 
@@ -428,9 +424,7 @@ mod tests {
         }
         
         let searcher = Arc::new(tokio::sync::RwLock::new(
-            BM25Searcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
-                .await
-                .unwrap()
+            BM25Searcher::new()
         ));
 
         let watcher = McpWatcher::new(temp_dir.path().to_path_buf(), searcher).await;
@@ -446,9 +440,7 @@ mod tests {
         }
         
         let searcher = Arc::new(tokio::sync::RwLock::new(
-            BM25Searcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
-                .await
-                .unwrap()
+            BM25Searcher::new()
         ));
 
         let watcher = McpWatcher::new(temp_dir.path().to_path_buf(), searcher).await.unwrap();
@@ -473,9 +465,7 @@ mod tests {
         }
         
         let searcher = Arc::new(tokio::sync::RwLock::new(
-            BM25Searcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
-                .await
-                .unwrap()
+            BM25Searcher::new()
         ));
 
         let watcher = McpWatcher::new(temp_dir.path().to_path_buf(), searcher).await.unwrap();
@@ -500,9 +490,7 @@ mod tests {
         }
         
         let searcher = Arc::new(tokio::sync::RwLock::new(
-            BM25Searcher::new(temp_dir.path().to_path_buf(), temp_dir.path().join(".embed"))
-                .await
-                .unwrap()
+            BM25Searcher::new()
         ));
 
         let watcher = McpWatcher::new(temp_dir.path().to_path_buf(), searcher).await.unwrap();
